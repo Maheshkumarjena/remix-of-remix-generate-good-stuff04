@@ -38,7 +38,9 @@ export function useRealtime(
 
   useEffect(() => {
     if (!userId || typeof window === "undefined") return;
+    if (isDemoMode()) return; // no realtime channel in demo mode
     const s = connect(userId, sessionId);
+
     const listener = (event: RealtimeEvent) => handlerRef.current(event);
     s.on("event", listener);
     return () => {
