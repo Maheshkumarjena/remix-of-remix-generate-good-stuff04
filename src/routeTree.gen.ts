@@ -10,11 +10,40 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChatRouteImport } from './routes/chat'
+import { Route as GrievancesRouteImport } from './routes/grievances'
+import { Route as LabsRouteImport } from './routes/labs'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as RequestsIndexRouteImport } from './routes/requests.index'
+import { Route as RequestsRequestIdRouteImport } from './routes/requests.$requestId'
+import { Route as StaffIndexRouteImport } from './routes/staff.index'
+import { Route as StaffApprovalsRouteImport } from './routes/staff.approvals'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GrievancesRoute = GrievancesRouteImport.update({
+  id: '/grievances',
+  path: '/grievances',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabsRoute = LabsRouteImport.update({
+  id: '/labs',
+  path: '/labs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -22,31 +51,126 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestsIndexRoute = RequestsIndexRouteImport.update({
+  id: '/requests/',
+  path: '/requests/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestsRequestIdRoute = RequestsRequestIdRouteImport.update({
+  id: '/requests/$requestId',
+  path: '/requests/$requestId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffIndexRoute = StaffIndexRouteImport.update({
+  id: '/staff/',
+  path: '/staff/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffApprovalsRoute = StaffApprovalsRouteImport.update({
+  id: '/staff/approvals',
+  path: '/staff/approvals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
+  '/grievances': typeof GrievancesRoute
+  '/labs': typeof LabsRoute
+  '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
+  '/settings': typeof SettingsRoute
+  '/requests/$requestId': typeof RequestsRequestIdRoute
+  '/staff/approvals': typeof StaffApprovalsRoute
+  '/requests/': typeof RequestsIndexRoute
+  '/staff/': typeof StaffIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
+  '/grievances': typeof GrievancesRoute
+  '/labs': typeof LabsRoute
+  '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
+  '/settings': typeof SettingsRoute
+  '/requests/$requestId': typeof RequestsRequestIdRoute
+  '/staff/approvals': typeof StaffApprovalsRoute
+  '/requests': typeof RequestsIndexRoute
+  '/staff': typeof StaffIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
+  '/grievances': typeof GrievancesRoute
+  '/labs': typeof LabsRoute
+  '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
+  '/settings': typeof SettingsRoute
+  '/requests/$requestId': typeof RequestsRequestIdRoute
+  '/staff/approvals': typeof StaffApprovalsRoute
+  '/requests/': typeof RequestsIndexRoute
+  '/staff/': typeof StaffIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/register'
+  fullPaths:
+    | '/'
+    | '/chat'
+    | '/grievances'
+    | '/labs'
+    | '/notifications'
+    | '/register'
+    | '/settings'
+    | '/requests/$requestId'
+    | '/staff/approvals'
+    | '/requests/'
+    | '/staff/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/register'
-  id: '__root__' | '/' | '/register'
+  to:
+    | '/'
+    | '/chat'
+    | '/grievances'
+    | '/labs'
+    | '/notifications'
+    | '/register'
+    | '/settings'
+    | '/requests/$requestId'
+    | '/staff/approvals'
+    | '/requests'
+    | '/staff'
+  id:
+    | '__root__'
+    | '/'
+    | '/chat'
+    | '/grievances'
+    | '/labs'
+    | '/notifications'
+    | '/register'
+    | '/settings'
+    | '/requests/$requestId'
+    | '/staff/approvals'
+    | '/requests/'
+    | '/staff/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChatRoute: typeof ChatRoute
+  GrievancesRoute: typeof GrievancesRoute
+  LabsRoute: typeof LabsRoute
+  NotificationsRoute: typeof NotificationsRoute
   RegisterRoute: typeof RegisterRoute
+  SettingsRoute: typeof SettingsRoute
+  RequestsRequestIdRoute: typeof RequestsRequestIdRoute
+  StaffApprovalsRoute: typeof StaffApprovalsRoute
+  RequestsIndexRoute: typeof RequestsIndexRoute
+  StaffIndexRoute: typeof StaffIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +182,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/grievances': {
+      id: '/grievances'
+      path: '/grievances'
+      fullPath: '/grievances'
+      preLoaderRoute: typeof GrievancesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/labs': {
+      id: '/labs'
+      path: '/labs'
+      fullPath: '/labs'
+      preLoaderRoute: typeof LabsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -65,12 +217,56 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/requests/': {
+      id: '/requests/'
+      path: '/requests'
+      fullPath: '/requests/'
+      preLoaderRoute: typeof RequestsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/requests/$requestId': {
+      id: '/requests/$requestId'
+      path: '/requests/$requestId'
+      fullPath: '/requests/$requestId'
+      preLoaderRoute: typeof RequestsRequestIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff/': {
+      id: '/staff/'
+      path: '/staff'
+      fullPath: '/staff/'
+      preLoaderRoute: typeof StaffIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff/approvals': {
+      id: '/staff/approvals'
+      path: '/staff/approvals'
+      fullPath: '/staff/approvals'
+      preLoaderRoute: typeof StaffApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChatRoute: ChatRoute,
+  GrievancesRoute: GrievancesRoute,
+  LabsRoute: LabsRoute,
+  NotificationsRoute: NotificationsRoute,
   RegisterRoute: RegisterRoute,
+  SettingsRoute: SettingsRoute,
+  RequestsRequestIdRoute: RequestsRequestIdRoute,
+  StaffApprovalsRoute: StaffApprovalsRoute,
+  RequestsIndexRoute: RequestsIndexRoute,
+  StaffIndexRoute: StaffIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
