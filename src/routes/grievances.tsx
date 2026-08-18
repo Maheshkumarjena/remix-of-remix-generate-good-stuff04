@@ -37,7 +37,7 @@ export const Route = createFileRoute("/grievances")({
   component: GrievancesPage,
 });
 
-const categories = ["hostel", "mess", "academics", "infrastructure", "harassment", "other"];
+const categories = ["hostel_maintenance", "hostel", "mess", "academics", "infrastructure", "harassment", "other"];
 const statusFilters = ["all", "open", "in_review", "escalated", "resolved", "rejected"];
 
 function GrievancesPage() {
@@ -47,7 +47,7 @@ function GrievancesPage() {
   const [status, setStatus] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState({
-    category: "hostel",
+    category: "hostel_maintenance",
     description: "",
     is_anonymous: false,
     evidence_urls: "",
@@ -80,6 +80,7 @@ function GrievancesPage() {
         body: {
           category: form.category,
           description: form.description,
+          anonymous: form.is_anonymous,
           is_anonymous: form.is_anonymous,
           evidence_urls: form.evidence_urls
             .split(",")
@@ -89,7 +90,7 @@ function GrievancesPage() {
       }),
     onSuccess: () => {
       toast.success("Grievance filed");
-      setForm({ category: "hostel", description: "", is_anonymous: false, evidence_urls: "" });
+      setForm({ category: "hostel_maintenance", description: "", is_anonymous: false, evidence_urls: "" });
       void queryClient.invalidateQueries({ queryKey: ["grievances"] });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "Could not file grievance"),
@@ -140,33 +141,41 @@ function GrievancesPage() {
             <EmptyState title="No grievances filed" hint="Use the form to raise your first grievance." />
           ) : null}
 
-          {grievances.map((g) => (
-            <button
-              key={g.id}
-              onClick={() => setSelectedId(g.id)}
-              className={`panel block w-full p-4 text-left transition-colors hover:bg-secondary/60 ${
-                selectedId === g.id ? "border-primary/50 bg-secondary/50" : ""
-              }`}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium capitalize">{g.category}</span>
-                <div className="flex items-center gap-2">
-                  {g.is_anonymous ? <StatusBadge value="anonymous" /> : null}
-                  <StatusBadge value={g.status} />
-                  {g.escalation_level !== undefined ? (
-                    <StatusBadge value={`level ${g.escalation_level}`} />
-                  ) : null}
+          {grievances.map((g) => {
+            const isAnonymous = g.anonymous !== undefined ? g.anonymous : Boolean(g.is_anonymous);
+            const escLevel = g.escalation_level ?? g.escalationLevel;
+            const createdAt = g.createdAt ?? g.created_at;
+
+            return (
+              <button
+                key={g.id}
+                onClick={() => setSelectedId(g.id)}
+                className={`panel block w-full p-4 text-left transition-colors hover:bg-secondary/60 ${
+                  selectedId === g.id ? "border-primary/50 bg-secondary/50" : ""
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium capitalize">{g.category.replace(/_/g, " ")}</span>
+                  <div className="flex items-center gap-2">
+                    {isAnonymous ? <StatusBadge value="anonymous" /> : null}
+                    <StatusBadge value={g.status} />
+                    {escLevel !== undefined ? (
+                      <StatusBadge value={`level ${escLevel}`} />
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-              <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{g.description}</p>
-              <p className="mt-2 text-xs text-muted-foreground">{formatDate(g.created_at)}</p>
-            </button>
-          ))}
+                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{g.description}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{formatDate(createdAt)}</p>
+              </button>
+            );
+          })}
 
           {selectedId ? (
             <div className="panel space-y-3 border-primary/40 p-5">
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-sm font-semibold capitalize">{selected?.category ?? "Grievance"} detail</h2>
+                <h2 className="font-display text-sm font-semibold capitalize">
+                  {selected?.category ? selected.category.replace(/_/g, " ") : "Grievance"} detail
+                </h2>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)}>
                   Close
                 </Button>
@@ -177,19 +186,46 @@ function GrievancesPage() {
                   <p className="text-sm">{selected.description}</p>
                   <div className="flex flex-wrap gap-2">
                     <StatusBadge value={selected.status} />
-                    <StatusBadge value={`escalation ${selected.escalation_level ?? 0}`} />
+                    <StatusBadge value={`escalation ${selected.escalation_level ?? selected.escalationLevel ?? 0}`} />
+                    {(selected.anonymous ?? selected.is_anonymous) ? <StatusBadge value="anonymous" /> : null}
+                    {(selected.sla_due_at ?? selected.slaDueAt) ? (
+                      <span className="text-xs text-muted-foreground">
+                        SLA Due: {formatDate(selected.sla_due_at ?? selected.slaDueAt)}
+                      </span>
+                    ) : null}
                   </div>
                   {selected.evidence_urls?.length ? (
-                    <ul className="space-y-1 text-xs">
-                      {selected.evidence_urls.map((u) => (
-                        <li key={u}>
-                          <a href={u} target="_blank" rel="noreferrer" className="text-primary underline">
-                            {u}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="space-y-1 text-xs">
+                      <p className="font-medium text-muted-foreground">Evidence attachments:</p>
+                      <ul className="space-y-1">
+                        {selected.evidence_urls.map((u) => (
+                          <li key={u}>
+                            <a href={u} target="_blank" rel="noreferrer" className="text-primary underline">
+                              {u}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : null}
+
+                  {selected.escalation_history?.length ? (
+                    <div className="space-y-2 pt-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Escalation History
+                      </p>
+                      <ol className="space-y-2 border-l border-border pl-4">
+                        {selected.escalation_history.map((h, i) => (
+                          <li key={i} className="text-xs">
+                            <p className="font-medium">Level {h.level} {h.escalated_by ? `by ${h.escalated_by}` : ""}</p>
+                            <p className="text-muted-foreground">{formatDate(h.escalated_at)}</p>
+                            {h.reason ? <p className="mt-0.5 text-muted-foreground">{h.reason}</p> : null}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  ) : null}
+
                   {canEscalate ? (
                     <Button
                       variant="outline"
@@ -221,7 +257,7 @@ function GrievancesPage() {
               <SelectContent>
                 {categories.map((c) => (
                   <SelectItem key={c} value={c} className="capitalize">
-                    {c}
+                    {c.replace(/_/g, " ")}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -238,7 +274,7 @@ function GrievancesPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="evidence">Evidence URLs</Label>
+            <Label htmlFor="evidence">Evidence URLs (comma separated)</Label>
             <Input
               id="evidence"
               value={form.evidence_urls}

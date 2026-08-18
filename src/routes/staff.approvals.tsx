@@ -83,45 +83,59 @@ function ApprovalQueue() {
       {approvals.length > 0 ? (
         <div className="grid gap-6 p-6 lg:grid-cols-[300px_minmax(0,1fr)]">
           <ul className="space-y-2">
-            {approvals.map((a) => (
-              <li key={a.id}>
-                <button
-                  onClick={() => setSelectedId(a.id)}
-                  className={`panel w-full p-3 text-left transition-colors hover:bg-secondary/60 ${
-                    selected?.id === a.id ? "border-primary/50 bg-secondary/50" : ""
-                  }`}
-                >
-                  <p className="truncate text-sm font-medium">{a.tool_name ?? "Agent action"}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatDate(a.created_at)}</p>
-                  <div className="mt-2 flex gap-2">
-                    <StatusBadge value={a.risk_level} />
-                    <StatusBadge value={a.status} />
-                  </div>
-                </button>
-              </li>
-            ))}
+            {approvals.map((a) => {
+              const toolName = a.workflowStep?.toolName ?? a.workflowStep?.tool_name ?? a.tool_name ?? a.workflowStep?.stepName ?? "Agent action";
+              const riskLevel = a.workflowStep?.riskLevel ?? a.workflowStep?.risk_level ?? a.risk_level ?? "high";
+              const status = a.decision ?? a.workflowStep?.status ?? a.status ?? "awaiting_approval";
+              const createdAt = a.createdAt ?? a.created_at;
+
+              return (
+                <li key={a.id}>
+                  <button
+                    onClick={() => setSelectedId(a.id)}
+                    className={`panel w-full p-3 text-left transition-colors hover:bg-secondary/60 ${
+                      selected?.id === a.id ? "border-primary/50 bg-secondary/50" : ""
+                    }`}
+                  >
+                    <p className="truncate text-sm font-medium">{toolName}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{formatDate(createdAt)}</p>
+                    <div className="mt-2 flex gap-2">
+                      <StatusBadge value={riskLevel} />
+                      <StatusBadge value={status} />
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
 
           {selected ? (
             <div className="space-y-4">
               <div className="panel p-5">
                 <h2 className="font-display text-sm font-semibold">Original request</h2>
-                <p className="mt-2 text-sm">{selected.original_request ?? "—"}</p>
+                <p className="mt-2 text-sm">
+                  {selected.workflowStep?.request?.description ??
+                    selected.original_request ??
+                    (selected.contextJson ? JSON.stringify(selected.contextJson, null, 2) : "—")}
+                </p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {selected.requester_name ?? "Student"}
+                  {selected.workflowStep?.request?.userId ? `User #${selected.workflowStep.request.userId.slice(0, 8)}` : (selected.requester_name ?? "Student")}
                   {selected.session_id ? ` · session ${selected.session_id.slice(0, 8)}` : ""}
                 </p>
               </div>
 
               <div className="panel p-5">
-                <h2 className="font-display text-sm font-semibold">Reasoning trace</h2>
-                <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
-                  {selected.reasoning ?? "No reasoning trace provided."}
+                <h2 className="font-display text-sm font-semibold">Workflow Step &amp; Reasoning</h2>
+                <p className="mt-2 text-sm font-medium">
+                  {selected.workflowStep?.stepName ?? selected.workflowStep?.step_name ?? "Step action"}
+                </p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                  {selected.workflowStep?.rationale ?? selected.reasoning ?? "Requires human-in-the-loop authorization before execution."}
                 </p>
               </div>
 
               <div className="panel p-5">
-                <h2 className="font-display text-sm font-semibold">Retrieved evidence</h2>
+                <h2 className="font-display text-sm font-semibold">Retrieved evidence &amp; Citations</h2>
                 {selected.evidence?.length ? (
                   <ul className="mt-3 space-y-2">
                     {selected.evidence.map((e, i) => (
@@ -152,9 +166,11 @@ function ApprovalQueue() {
 
               <div className="panel p-5">
                 <h2 className="font-display text-sm font-semibold">Proposed tool call</h2>
-                <p className="mt-2 font-mono text-sm">{selected.tool_name ?? "—"}</p>
+                <p className="mt-2 font-mono text-sm">
+                  {selected.workflowStep?.toolName ?? selected.tool_name ?? "—"}
+                </p>
                 <pre className="mt-3 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">
-                  {JSON.stringify(selected.tool_args ?? {}, null, 2)}
+                  {JSON.stringify(selected.contextJson ?? selected.tool_args ?? {}, null, 2)}
                 </pre>
               </div>
 
@@ -178,7 +194,7 @@ function ApprovalQueue() {
                     disabled={decide.isPending}
                     onClick={() => decide.mutate({ id: selected.id, action: "approve" })}
                   >
-                    Approve & execute
+                    Approve &amp; execute
                   </Button>
                   <Button
                     variant="destructive"

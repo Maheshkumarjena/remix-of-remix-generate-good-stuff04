@@ -143,32 +143,41 @@ function LabsPage() {
               <EmptyState title="No bookings for this day" hint="The lab is free — book a slot on the right." />
             ) : (
               <ul className="space-y-2">
-                {listOf<LabBooking>(bookings.data).map((b) => (
-                  <li key={b.id} className="panel flex flex-wrap items-center justify-between gap-3 p-4">
-                    <div>
-                      <p className="text-sm font-medium">
-                        {formatDate(b.start_time)} → {formatDate(b.end_time)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {b.course_code ?? "No course code"}
-                        {b.faculty_reference ? ` · ${b.faculty_reference}` : ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <StatusBadge value={b.status ?? "booked"} />
-                      {b.user_id === user.id ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => cancel.mutate(b.id)}
-                          aria-label="Cancel booking"
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
+                {listOf<LabBooking>(bookings.data).map((b) => {
+                  const startTime = b.startTime ?? b.start_time;
+                  const endTime = b.endTime ?? b.end_time;
+                  const courseCode = b.courseCode ?? b.course_code;
+                  const facultyRef = b.facultyRef ?? b.faculty_reference;
+                  const bookingUserId = b.userId ?? b.user_id;
+
+                  return (
+                    <li key={b.id} className="panel flex flex-wrap items-center justify-between gap-3 p-4">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {formatDate(startTime)} → {formatDate(endTime)}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {courseCode ?? "No course code"}
+                          {facultyRef ? ` · ${facultyRef}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <StatusBadge value={b.status ?? "confirmed"} />
+                        {bookingUserId === user.id ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={cancel.isPending}
+                            onClick={() => cancel.mutate(b.id)}
+                            aria-label="Cancel booking"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )
           ) : null}
@@ -202,7 +211,7 @@ function LabsPage() {
               id="course"
               value={form.course_code}
               onChange={(e) => setForm({ ...form, course_code: e.target.value })}
-              placeholder="CS-3021"
+              placeholder="CS401"
             />
           </div>
           <div className="space-y-2">
@@ -211,7 +220,7 @@ function LabsPage() {
               id="faculty"
               value={form.faculty_reference}
               onChange={(e) => setForm({ ...form, faculty_reference: e.target.value })}
-              placeholder="Dr. Mishra"
+              placeholder="Dr. Sharma"
             />
           </div>
 

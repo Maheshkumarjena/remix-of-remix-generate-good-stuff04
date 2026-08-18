@@ -83,48 +83,62 @@ function StaffDashboard() {
             {approvalList.length === 0 && !approvals.isLoading ? (
               <EmptyState title="No approvals waiting" hint="Agent actions needing review will land here." />
             ) : null}
-            {approvalList.slice(0, 5).map((a) => (
-              <Link
-                key={a.id}
-                to="/staff/approvals"
-                className="panel flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-secondary/60"
-              >
-                <div>
-                  <p className="text-sm font-medium">{a.tool_name ?? "Agent action"}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {a.requester_name ?? "Student"} · {formatDate(a.created_at)}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <StatusBadge value={a.risk_level} />
-                  <StatusBadge value={a.status} />
-                </div>
-              </Link>
-            ))}
+            {approvalList.slice(0, 5).map((a) => {
+              const toolName = a.workflowStep?.toolName ?? a.workflowStep?.tool_name ?? a.tool_name ?? a.workflowStep?.stepName ?? "Agent action";
+              const riskLevel = a.workflowStep?.riskLevel ?? a.workflowStep?.risk_level ?? a.risk_level ?? "high";
+              const status = a.decision ?? a.workflowStep?.status ?? a.status ?? "awaiting_approval";
+              const createdAt = a.createdAt ?? a.created_at;
+              const requester = a.workflowStep?.request?.userId ? `User #${a.workflowStep.request.userId.slice(0, 8)}` : (a.requester_name ?? "Student");
+
+              return (
+                <Link
+                  key={a.id}
+                  to="/staff/approvals"
+                  className="panel flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-secondary/60"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{toolName}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {requester} · {formatDate(createdAt)}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <StatusBadge value={riskLevel} />
+                    <StatusBadge value={status} />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
 
         <section>
           <h2 className="font-display text-sm font-semibold">Recent requests</h2>
           <div className="mt-3 space-y-2">
-            {requestList.slice(0, 8).map((r) => (
-              <Link
-                key={r.id}
-                to="/requests/$requestId"
-                params={{ requestId: r.id }}
-                className="panel flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-secondary/60"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium capitalize">
-                    {r.title ?? r.type?.replace(/_/g, " ")}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    #{r.id.slice(0, 8)} · SLA {formatDate(r.sla_due_at)}
-                  </p>
-                </div>
-                <StatusBadge value={r.status} />
-              </Link>
-            ))}
+            {requestList.slice(0, 8).map((r) => {
+              const reqType = r.request_type ?? r.type;
+              const reqTitle = r.title ?? (reqType ? reqType.replace(/_/g, " ") : "Service request");
+              const slaDue = r.slaDueAt ?? r.sla_due_at;
+
+              return (
+                <Link
+                  key={r.id}
+                  to="/requests/$requestId"
+                  params={{ requestId: r.id }}
+                  className="panel flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-secondary/60"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium capitalize">
+                      {reqTitle}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      #{r.id.slice(0, 8)} · SLA {formatDate(slaDue)}
+                    </p>
+                  </div>
+                  <StatusBadge value={r.status} />
+                </Link>
+              );
+            })}
           </div>
         </section>
       </div>

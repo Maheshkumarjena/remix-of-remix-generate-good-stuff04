@@ -140,7 +140,7 @@ function AdminDashboard() {
                 <h2 className="font-display text-sm font-semibold">Recent audit events</h2>
               </div>
               <Button asChild size="sm" variant="ghost">
-                <Link to="/admin/policy-conflicts">View all</Link>
+                <Link to="/admin/audit">View all</Link>
               </Button>
             </div>
             <div className="p-2">
@@ -150,20 +150,24 @@ function AdminDashboard() {
                 <EmptyState title="No audit events" hint="Hash-chained actions will appear here." />
               ) : null}
               <ul className="divide-y divide-border">
-                {auditList.map((event) => (
-                  <li key={event.id} className="flex items-center justify-between gap-4 px-3 py-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium capitalize">
-                        {event.action?.replace(/_/g, " ")} · {event.entity_type}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {event.actor_id ? `Actor ${event.actor_id.slice(0, 8)}` : "System"} ·{" "}
-                        {formatDate(event.created_at)}
-                      </p>
-                    </div>
-                    <StatusBadge value={event.entity_type} />
-                  </li>
-                ))}
+                {auditList.map((event) => {
+                  const eType = event.entityType ?? event.entity_type ?? "entity";
+                  const eCreated = event.createdAt ?? event.created_at;
+                  const eActor = event.actor ?? (event.actor_id ? `Actor ${event.actor_id.slice(0, 8)}` : "System");
+                  return (
+                    <li key={event.id} className="flex items-center justify-between gap-4 px-3 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium capitalize">
+                          {event.action?.replace(/_/g, " ")} · {eType}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {eActor} · {formatDate(eCreated)}
+                        </p>
+                      </div>
+                      <StatusBadge value={eType} />
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </section>
@@ -188,16 +192,21 @@ function AdminDashboard() {
                 />
               ) : null}
               <ul className="divide-y divide-border">
-                {conflictList.map((conflict) => (
-                  <li key={conflict.id} className="px-3 py-3">
-                    <p className="text-sm font-medium">
-                      {conflict.summary ?? `Conflict ${conflict.id.slice(0, 8)}`}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      Detected {formatDate(conflict.detected_at)}
-                    </p>
-                  </li>
-                ))}
+                {conflictList.map((conflict) => {
+                  const raisedAt = conflict.raised_at ?? conflict.detected_at;
+                  const docA = conflict.doc_a ?? (conflict.document_a as { document_id?: string; clause?: string; version?: string } | undefined);
+                  const docB = conflict.doc_b ?? (conflict.document_b as { document_id?: string; clause?: string; version?: string } | undefined);
+                  const title = conflict.summary ?? (docA && docB ? `${docA.document_id} ↔ ${docB.document_id}` : `Conflict #${conflict.id.slice(0, 8)}`);
+
+                  return (
+                    <li key={conflict.id} className="px-3 py-3">
+                      <p className="text-sm font-medium">{title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Detected {formatDate(raisedAt)}
+                      </p>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </section>
@@ -228,7 +237,7 @@ function AdminDashboard() {
                       <p className="truncate text-sm font-medium">{doc.title}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         Version {doc.version ?? "—"} · {doc.chunk_count ?? 0} chunks · updated{" "}
-                        {formatDate(doc.updated_at)}
+                        {formatDate(doc.updated_at ?? doc.createdAt)}
                       </p>
                     </div>
                     <StatusBadge value={doc.status} />
@@ -257,7 +266,7 @@ function AdminDashboard() {
                     className="flex items-center justify-between gap-4 px-3 py-3"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{item.step_name}</p>
+                      <p className="truncate text-sm font-medium capitalize">{item.step_name.replace(/_/g, " ")}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">Department {item.department}</p>
                     </div>
                     <StatusBadge value={`${item.overdue_count} overdue`} />

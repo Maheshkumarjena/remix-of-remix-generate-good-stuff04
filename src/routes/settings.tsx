@@ -80,7 +80,7 @@ function SettingsPage() {
           <Row label="Name" value={user.name} />
           <Row label="Email" value={user.email} />
           <Row label="Role" value={user.role.replace("_", " ")} />
-          <Row label="Department" value={user.department ?? "—"} />
+          <Row label="Department" value={user.department ?? user.department_id ?? "—"} />
         </div>
 
         <div className="panel space-y-4 p-5">

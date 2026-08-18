@@ -104,7 +104,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="px-2 pb-2">
             <p className="truncate text-sm font-medium">{user?.name ?? "—"}</p>
             <p className="truncate text-xs text-sidebar-foreground/60">
-              {user?.role?.replace("_", " ")} {user?.department ? `· ${user.department}` : ""}
+              {user?.role?.replace("_", " ")} {(user?.department ?? user?.department_id) ? `· ${user?.department ?? user?.department_id}` : ""}
             </p>
           </div>
           <Button

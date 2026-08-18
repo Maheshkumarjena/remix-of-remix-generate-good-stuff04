@@ -103,9 +103,11 @@ function NotificationsPage() {
         ) : null}
 
         {notifications.map((n) => {
-          const read = n.read ?? n.is_read ?? false;
+          const isRead = n.readFlag !== undefined ? n.readFlag : (n.read ?? n.is_read ?? false);
+          const createdAt = n.createdAt ?? n.created_at;
+
           return (
-            <div key={n.id} className={`panel flex items-start gap-3 p-4 ${read ? "opacity-70" : ""}`}>
+            <div key={n.id} className={`panel flex items-start gap-3 p-4 ${isRead ? "opacity-70" : ""}`}>
               <Checkbox
                 checked={selected.includes(n.id)}
                 onCheckedChange={(checked) =>
@@ -116,8 +118,8 @@ function NotificationsPage() {
               />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">{n.title ?? "Update"}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{n.message ?? n.body}</p>
-                <p className="mt-2 text-xs text-muted-foreground">{formatDate(n.created_at)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{n.body ?? n.message}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{formatDate(createdAt)}</p>
               </div>
               {n.deepLink ? (
                 <Button

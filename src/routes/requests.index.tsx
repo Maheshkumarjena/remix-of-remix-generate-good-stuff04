@@ -36,14 +36,14 @@ export const Route = createFileRoute("/requests/")({
   component: RequestsPage,
 });
 
-const statuses = ["all", "open", "in_progress", "pending_approval", "completed", "rejected"];
+const statuses = ["all", "open", "in_progress", "pending", "pending_approval", "completed", "resolved", "rejected"];
 
 function RequestsPage() {
   const { user, loading } = useRequireRole();
   const { user: authUser } = useAuth();
   const [status, setStatus] = useState("all");
   const [form, setForm] = useState({
-    request_type: "maintenance",
+    request_type: "bonafide_certificate",
     description: "",
     department_id: "",
   });
@@ -71,7 +71,7 @@ function RequestsPage() {
       }),
     onSuccess: () => {
       toast.success("Request created");
-      setForm({ request_type: "maintenance", description: "", department_id: "" });
+      setForm({ request_type: "bonafide_certificate", description: "", department_id: "" });
       void queryClient.invalidateQueries({ queryKey: ["requests"] });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "Could not create request"),
@@ -110,27 +110,32 @@ function RequestsPage() {
             {requests.length === 0 ? (
               <EmptyState title="No requests yet" hint="Ask the copilot for a certificate, repair or lab slot." />
             ) : (
-              requests.map((r) => (
-                <Link
-                  key={r.id}
-                  to="/requests/$requestId"
-                  params={{ requestId: r.id }}
-                  className="panel block p-4 transition-colors hover:bg-secondary/60"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium capitalize">
-                        {r.title ?? r.type?.replace(/_/g, " ") ?? "Service request"}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        #{r.id.slice(0, 8)} · created {formatDate(r.created_at)}
-                        {r.sla_due_at ? ` · SLA ${formatDate(r.sla_due_at)}` : ""}
-                      </p>
+              requests.map((r) => {
+                const reqType = r.request_type ?? r.type;
+                const reqTitle = r.title ?? (reqType ? reqType.replace(/_/g, " ") : "Service request");
+                const createdAt = r.createdAt ?? r.created_at;
+                const slaDue = r.slaDueAt ?? r.sla_due_at;
+
+                return (
+                  <Link
+                    key={r.id}
+                    to="/requests/$requestId"
+                    params={{ requestId: r.id }}
+                    className="panel block p-4 transition-colors hover:bg-secondary/60"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium capitalize">{reqTitle}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          #{r.id.slice(0, 8)} · created {formatDate(createdAt)}
+                          {slaDue ? ` · SLA ${formatDate(slaDue)}` : ""}
+                        </p>
+                      </div>
+                      <StatusBadge value={r.status} />
                     </div>
-                    <StatusBadge value={r.status} />
-                  </div>
-                </Link>
-              ))
+                  </Link>
+                );
+              })
             )}
           </section>
 
@@ -146,10 +151,10 @@ function RequestsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="certificate">Certificate</SelectItem>
-                  <SelectItem value="lab_booking">Lab booking</SelectItem>
-                  <SelectItem value="grievance">Grievance support</SelectItem>
+                  <SelectItem value="bonafide_certificate">Bonafide Certificate</SelectItem>
+                  <SelectItem value="hostel_maintenance">Hostel Maintenance</SelectItem>
+                  <SelectItem value="lab_booking">Lab Booking</SelectItem>
+                  <SelectItem value="grievance">Grievance Support</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -160,7 +165,7 @@ function RequestsPage() {
                 rows={5}
                 value={form.description}
                 onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Describe your request clearly with location and timeline."
+                placeholder="Describe your request clearly with location and purpose."
               />
             </div>
             <div className="space-y-2">

@@ -54,13 +54,22 @@ function ChatPage() {
     let active = true;
     (async () => {
       try {
-        const session = await api<{ id?: string; session_id?: string }>("/agent/session", { method: "POST" });
+        const session = await api<{ id?: string; session_id?: string }>("/agent/session", {
+          method: "POST",
+          body: { language: user.preferred_language ?? "en" },
+        });
         const id = session.id ?? session.session_id ?? null;
         if (!active) return;
         setSessionId(id);
         if (id) {
           const detail = await api<{ messages?: AgentMessage[] }>(`/agent/session/${id}`).catch(() => null);
-          if (active && detail?.messages) setMessages(detail.messages);
+          if (active && detail?.messages) {
+            const normalized = detail.messages.map((m) => ({
+              ...m,
+              role: (m.role ?? (m.sender === "user" ? "user" : "assistant")) as "user" | "assistant" | "system",
+            }));
+            setMessages(normalized);
+          }
         }
       } catch (err) {
         if (active) setConnectionError(err instanceof Error ? err.message : "Could not start a session");
@@ -244,7 +253,7 @@ function ChatPage() {
 }
 
 function MessageBubble({ message }: { message: AgentMessage }) {
-  const isUser = message.role === "user";
+  const isUser = message.role === "user" || message.sender === "user";
   return (
     <div className={`flex gap-3 ${isUser ? "justify-end" : ""}`}>
       {!isUser ? (
@@ -308,22 +317,28 @@ function PlanPanel({ plan, sessionId }: { plan: PlanStep[]; sessionId: string | 
           <p className="mt-2 text-xs text-muted-foreground">No plan steps yet.</p>
         ) : (
           <ol className="mt-3 space-y-3">
-            {steps.map((step, i) => (
-              <li key={step.id ?? i} className="panel p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium">{step.title ?? step.tool ?? `Step ${i + 1}`}</p>
-                  <StatusBadge value={step.status} />
-                </div>
-                {step.description ? (
-                  <p className="mt-1 text-xs text-muted-foreground">{step.description}</p>
-                ) : null}
-                {step.risk_level ? (
-                  <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-                    risk: {step.risk_level}
-                  </p>
-                ) : null}
-              </li>
-            ))}
+            {steps.map((step, i) => {
+              const stepName = step.step_name ?? step.title ?? step.tool_name ?? step.tool ?? `Step ${i + 1}`;
+              const rationale = step.rationale ?? step.description;
+              const risk = step.risk_level ?? step.riskLevel;
+
+              return (
+                <li key={step.id ?? i} className="panel p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium capitalize">{stepName.replace(/_/g, " ")}</p>
+                    <StatusBadge value={step.status} />
+                  </div>
+                  {rationale ? (
+                    <p className="mt-1 text-xs text-muted-foreground">{rationale}</p>
+                  ) : null}
+                  {risk ? (
+                    <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                      risk: {risk}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ol>
         )}
       </div>
@@ -333,12 +348,15 @@ function PlanPanel({ plan, sessionId }: { plan: PlanStep[]; sessionId: string | 
         <ul className="mt-3 space-y-2">
           {listOf<ServiceRequest>(requests)
             .slice(0, 5)
-            .map((r) => (
-              <li key={r.id} className="panel flex items-center justify-between gap-2 p-3 text-sm">
-                <span className="truncate capitalize">{r.title ?? r.type?.replace(/_/g, " ")}</span>
-                <StatusBadge value={r.status} />
-              </li>
-            ))}
+            .map((r) => {
+              const label = r.title ?? (r.request_type ?? r.type)?.replace(/_/g, " ") ?? "Request";
+              return (
+                <li key={r.id} className="panel flex items-center justify-between gap-2 p-3 text-sm">
+                  <span className="truncate capitalize">{label}</span>
+                  <StatusBadge value={r.status} />
+                </li>
+              );
+            })}
           {listOf<ServiceRequest>(requests).length === 0 ? (
             <li className="text-xs text-muted-foreground">Nothing active.</li>
           ) : null}
@@ -353,7 +371,7 @@ function PlanPanel({ plan, sessionId }: { plan: PlanStep[]; sessionId: string | 
             .map((n) => (
               <li key={n.id} className="panel flex gap-2 p-3 text-xs">
                 <Clock className="mt-0.5 size-3 shrink-0 text-muted-foreground" />
-                <span>{n.title ?? n.message ?? n.body}</span>
+                <span>{n.title ?? n.body ?? n.message}</span>
               </li>
             ))}
           {listOf<Notification>(notifications).length === 0 ? (

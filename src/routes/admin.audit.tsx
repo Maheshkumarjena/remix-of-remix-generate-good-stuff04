@@ -49,7 +49,7 @@ function AuditExplorer() {
       api<AuditVerifyResponse>(`/audit/verify/${input.entityType}/${input.entityId}`),
     onSuccess: (res, vars) => {
       setVerifyResult((prev) => ({ ...prev, [`${vars.entityType}:${vars.entityId}`]: Boolean(res.intact) }));
-      toast.success(res.intact ? "Audit chain intact" : "Audit chain verification failed");
+      toast.success(res.intact ? "Audit chain intact" : "Audit chain verification failed (tampering detected)");
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "Verification failed"),
   });
@@ -86,7 +86,7 @@ function AuditExplorer() {
             <Label htmlFor="action">Action</Label>
             <Input
               id="action"
-              placeholder="N8.generated_plan"
+              placeholder="N13.approval_creation"
               value={action}
               onChange={(e) => setAction(e.target.value)}
             />
@@ -114,49 +114,61 @@ function AuditExplorer() {
         ) : null}
 
         <ul className="space-y-2">
-          {events.map((event) => (
-            <li key={event.id} className="panel p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-medium capitalize">
-                  {event.action?.replace(/_/g, " ")} · {event.entity_type}
-                </p>
-                <span className="font-mono text-xs text-muted-foreground">
-                  #{event.id.slice(0, 8)}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {event.actor_id ? `Actor ${event.actor_id.slice(0, 8)}` : "System"} ·{" "}
-                {formatDate(event.created_at)}
-              </p>
-              {event.hash ? (
-                <p className="mt-2 font-mono text-[11px] text-muted-foreground">
-                  Hash: {event.hash.slice(0, 32)}…
-                </p>
-              ) : null}
-              <div className="mt-3 flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={verify.isPending}
-                  onClick={() => verify.mutate({ entityType: event.entity_type, entityId: event.entity_id })}
-                >
-                  Verify chain
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setSelectedEntity({ entityType: event.entity_type, entityId: event.entity_id })}
-                >
-                  View entity trail
-                </Button>
-                {verifyResult[`${event.entity_type}:${event.entity_id}`] !== undefined ? (
-                  <span className="text-xs text-muted-foreground">
-                    Integrity: {verifyResult[`${event.entity_type}:${event.entity_id}`] ? "intact" : "broken"}
+          {events.map((event) => {
+            const eType = event.entityType ?? event.entity_type ?? "entity";
+            const eId = event.entityId ?? event.entity_id ?? "";
+            const eHash = event.entryHash ?? event.hash ?? "";
+            const eCreated = event.createdAt ?? event.created_at;
+            const eActor = event.actor ?? (event.actor_id ? `Actor ${event.actor_id.slice(0, 8)}` : "System");
+            const key = `${eType}:${eId}`;
+
+            return (
+              <li key={event.id} className="panel p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium capitalize">
+                    {event.action?.replace(/_/g, " ")} · {eType}
+                  </p>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    #{event.id.slice(0, 8)}
                   </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {eActor} · {formatDate(eCreated)}
+                </p>
+                {eHash ? (
+                  <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+                    Hash: {eHash.slice(0, 32)}…
+                  </p>
                 ) : null}
-              </div>
-            </li>
-          ))}
+                <div className="mt-3 flex items-center gap-2">
+                  {eType && eId ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={verify.isPending}
+                        onClick={() => verify.mutate({ entityType: eType, entityId: eId })}
+                      >
+                        Verify chain
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelectedEntity({ entityType: eType, entityId: eId })}
+                      >
+                        View entity trail
+                      </Button>
+                    </>
+                  ) : null}
+                  {verifyResult[key] !== undefined ? (
+                    <span className="text-xs text-muted-foreground">
+                      Integrity: {verifyResult[key] ? "intact" : "broken"}
+                    </span>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
         </ul>
 
         {selectedEntity ? (
@@ -175,14 +187,18 @@ function AuditExplorer() {
               <EmptyState title="No entity events" hint="No hash chain entries found for this entity." />
             ) : null}
             <ul className="space-y-2">
-              {(entityTrail.data ?? []).map((entry) => (
-                <li key={entry.id} className="rounded-md border border-border p-3">
-                  <p className="text-sm font-medium capitalize">{entry.action?.replace(/_/g, " ")}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {entry.actor_id ? `Actor ${entry.actor_id.slice(0, 8)}` : "System"} · {formatDate(entry.created_at)}
-                  </p>
-                </li>
-              ))}
+              {(entityTrail.data ?? []).map((entry) => {
+                const entryActor = entry.actor ?? (entry.actor_id ? `Actor ${entry.actor_id.slice(0, 8)}` : "System");
+                const entryCreated = entry.createdAt ?? entry.created_at;
+                return (
+                  <li key={entry.id} className="rounded-md border border-border p-3">
+                    <p className="text-sm font-medium capitalize">{entry.action?.replace(/_/g, " ")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {entryActor} · {formatDate(entryCreated)}
+                    </p>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ) : null}

@@ -33,8 +33,8 @@ export const Route = createFileRoute("/staff/requests")({
   component: StaffRequests,
 });
 
-const filters = ["all", "open", "in_progress", "pending_approval", "completed", "rejected"];
-const nextStatuses = ["in_progress", "pending_approval", "completed", "rejected"];
+const filters = ["all", "open", "in_progress", "pending", "pending_approval", "completed", "resolved", "rejected"];
+const nextStatuses = ["in_progress", "pending_approval", "completed", "resolved", "rejected"];
 
 function StaffRequests() {
   const { user, loading } = useRequireRole(["staff", "warden", "lab_incharge", "admin"]);
@@ -91,42 +91,49 @@ function StaffRequests() {
       {!query.isLoading && requests.length === 0 ? <EmptyState title="No requests in this filter" /> : null}
 
       <div className="space-y-3 p-6">
-        {requests.map((r) => (
-          <div key={r.id} className="panel flex flex-wrap items-center justify-between gap-3 p-4">
-            <div className="min-w-0">
-              <Link
-                to="/requests/$requestId"
-                params={{ requestId: r.id }}
-                className="truncate font-medium capitalize hover:underline"
-              >
-                {r.title ?? r.type?.replace(/_/g, " ")}
-              </Link>
-              <p className="mt-1 text-xs text-muted-foreground">
-                #{r.id.slice(0, 8)} · {r.department ?? "—"} · SLA {formatDate(r.sla_due_at)}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <StatusBadge value={r.status} />
-              <Select value="" onValueChange={(v) => update.mutate({ id: r.id, status: v })}>
-                <SelectTrigger className="w-44">
-                  <SelectValue placeholder="Update status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {nextStatuses.map((s) => (
-                    <SelectItem key={s} value={s} className="capitalize">
-                      {s.replace(/_/g, " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/requests/$requestId" params={{ requestId: r.id }}>
-                  Open
+        {requests.map((r) => {
+          const reqType = r.request_type ?? r.type;
+          const reqTitle = r.title ?? (reqType ? reqType.replace(/_/g, " ") : "Service request");
+          const dept = r.department_id ?? r.departmentId ?? r.department ?? "—";
+          const slaDue = r.slaDueAt ?? r.sla_due_at;
+
+          return (
+            <div key={r.id} className="panel flex flex-wrap items-center justify-between gap-3 p-4">
+              <div className="min-w-0">
+                <Link
+                  to="/requests/$requestId"
+                  params={{ requestId: r.id }}
+                  className="truncate font-medium capitalize hover:underline"
+                >
+                  {reqTitle}
                 </Link>
-              </Button>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  #{r.id.slice(0, 8)} · {dept} · SLA {formatDate(slaDue)}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <StatusBadge value={r.status} />
+                <Select value="" onValueChange={(v) => update.mutate({ id: r.id, status: v })}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue placeholder="Update status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {nextStatuses.map((s) => (
+                      <SelectItem key={s} value={s} className="capitalize">
+                        {s.replace(/_/g, " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/requests/$requestId" params={{ requestId: r.id }}>
+                    Open
+                  </Link>
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </AppShell>
   );

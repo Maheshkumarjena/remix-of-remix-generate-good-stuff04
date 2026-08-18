@@ -45,10 +45,18 @@ function RequestDetail() {
   const request = query.data;
   const timeline: WorkflowStep[] = request?.timeline ?? [];
 
+  const reqType = request?.request_type ?? request?.type;
+  const reqTitle = request?.title ?? (reqType ? reqType.replace(/_/g, " ") : "Service request");
+  const dept = request?.department_id ?? request?.departmentId ?? request?.department ?? "—";
+  const createdAt = request?.createdAt ?? request?.created_at;
+  const slaDue = request?.slaDueAt ?? request?.sla_due_at;
+  const resolvedAt = request?.resolvedAt ?? request?.updated_at;
+  const sessionId = request?.sessionId ?? request?.session_id;
+
   return (
     <AppShell>
       <PageHeader
-        title={request?.title ?? "Service request"}
+        title={reqTitle}
         description={`#${requestId.slice(0, 8)}`}
         actions={
           <Button variant="outline" size="sm" asChild>
@@ -67,7 +75,7 @@ function RequestDetail() {
           <div className="panel p-5">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge value={request.status} />
-              <StatusBadge value={request.type} />
+              {reqType ? <StatusBadge value={reqType} /> : null}
             </div>
             <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed">
               {request.description ?? "No description provided."}
@@ -78,29 +86,39 @@ function RequestDetail() {
               <p className="mt-2 text-xs text-muted-foreground">No workflow steps recorded yet.</p>
             ) : (
               <ol className="mt-4 space-y-4 border-l border-border pl-5">
-                {timeline.map((step, i) => (
-                  <li key={step.id ?? i} className="relative">
-                    <span className="absolute -left-[1.6rem] top-1.5 size-2 rounded-full bg-primary" />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge value={step.status} />
-                      <span className="text-xs text-muted-foreground">{formatDate(step.created_at)}</span>
-                    </div>
-                    {step.note ? <p className="mt-1 text-sm">{step.note}</p> : null}
-                    {step.actor ? <p className="text-xs text-muted-foreground">by {step.actor}</p> : null}
-                  </li>
-                ))}
+                {timeline.map((step, i) => {
+                  const stepTitle = step.step_name ?? step.stepName ?? step.note ?? step.tool_name ?? `Step ${i + 1}`;
+                  const stepTime = step.executed_at ?? step.executedAt ?? step.created_at ?? step.createdAt;
+                  const risk = step.risk_level ?? step.riskLevel;
+
+                  return (
+                    <li key={step.id ?? i} className="relative">
+                      <span className="absolute -left-[1.6rem] top-1.5 size-2 rounded-full bg-primary" />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-medium capitalize">{stepTitle.replace(/_/g, " ")}</span>
+                        <StatusBadge value={step.status} />
+                        {risk ? <StatusBadge value={`risk: ${risk}`} /> : null}
+                        {stepTime ? (
+                          <span className="text-xs text-muted-foreground">{formatDate(stepTime)}</span>
+                        ) : null}
+                      </div>
+                      {step.rationale ? <p className="mt-1 text-xs text-muted-foreground">{step.rationale}</p> : null}
+                      {step.actor ? <p className="text-xs text-muted-foreground">by {step.actor}</p> : null}
+                    </li>
+                  );
+                })}
               </ol>
             )}
           </div>
 
           <aside className="space-y-3">
             <div className="panel space-y-3 p-4 text-sm">
-              <Field label="Department" value={request.department ?? "—"} />
-              <Field label="Created" value={formatDate(request.created_at)} />
-              <Field label="Updated" value={formatDate(request.updated_at)} />
-              <Field label="SLA due" value={formatDate(request.sla_due_at)} />
+              <Field label="Department" value={dept} />
+              <Field label="Created" value={formatDate(createdAt)} />
+              {resolvedAt ? <Field label="Resolved" value={formatDate(resolvedAt)} /> : null}
+              <Field label="SLA due" value={formatDate(slaDue)} />
             </div>
-            {request.session_id ? (
+            {sessionId ? (
               <Button variant="outline" className="w-full" asChild>
                 <Link to="/chat">
                   <MessageSquare className="size-4" /> Open originating chat
