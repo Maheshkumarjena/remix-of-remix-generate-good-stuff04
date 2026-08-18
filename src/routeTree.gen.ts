@@ -16,6 +16,7 @@ import { Route as LabsRouteImport } from './routes/labs'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as RequestsIndexRouteImport } from './routes/requests.index'
 import { Route as RequestsRequestIdRouteImport } from './routes/requests.$requestId'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
@@ -57,6 +58,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RequestsIndexRoute = RequestsIndexRouteImport.update({
   id: '/requests/',
   path: '/requests/',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
   '/staff/requests': typeof StaffRequestsRoute
+  '/admin/': typeof AdminIndexRoute
   '/requests/': typeof RequestsIndexRoute
   '/staff/': typeof StaffIndexRoute
 }
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
   '/staff/requests': typeof StaffRequestsRoute
+  '/admin': typeof AdminIndexRoute
   '/requests': typeof RequestsIndexRoute
   '/staff': typeof StaffIndexRoute
 }
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
   '/staff/requests': typeof StaffRequestsRoute
+  '/admin/': typeof AdminIndexRoute
   '/requests/': typeof RequestsIndexRoute
   '/staff/': typeof StaffIndexRoute
 }
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/requests/$requestId'
     | '/staff/approvals'
     | '/staff/requests'
+    | '/admin/'
     | '/requests/'
     | '/staff/'
   fileRoutesByTo: FileRoutesByTo
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/requests/$requestId'
     | '/staff/approvals'
     | '/staff/requests'
+    | '/admin'
     | '/requests'
     | '/staff'
   id:
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/requests/$requestId'
     | '/staff/approvals'
     | '/staff/requests'
+    | '/admin/'
     | '/requests/'
     | '/staff/'
   fileRoutesById: FileRoutesById
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   RequestsRequestIdRoute: typeof RequestsRequestIdRoute
   StaffApprovalsRoute: typeof StaffApprovalsRoute
   StaffRequestsRoute: typeof StaffRequestsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   RequestsIndexRoute: typeof RequestsIndexRoute
   StaffIndexRoute: typeof StaffIndexRoute
 }
@@ -237,6 +250,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/requests/': {
       id: '/requests/'
       path: '/requests'
@@ -286,6 +306,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequestsRequestIdRoute: RequestsRequestIdRoute,
   StaffApprovalsRoute: StaffApprovalsRoute,
   StaffRequestsRoute: StaffRequestsRoute,
+  AdminIndexRoute: AdminIndexRoute,
   RequestsIndexRoute: RequestsIndexRoute,
   StaffIndexRoute: StaffIndexRoute,
 }
