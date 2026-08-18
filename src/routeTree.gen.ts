@@ -15,6 +15,7 @@ import { Route as GrievancesRouteImport } from './routes/grievances'
 import { Route as LabsRouteImport } from './routes/labs'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RequestsIndexRouteImport } from './routes/requests.index'
 import { Route as RequestsRequestIdRouteImport } from './routes/requests.$requestId'
 
@@ -48,6 +49,11 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RequestsIndexRoute = RequestsIndexRouteImport.update({
   id: '/requests/',
   path: '/requests/',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/labs': typeof LabsRoute
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
+  '/settings': typeof SettingsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/requests/': typeof RequestsIndexRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/labs': typeof LabsRoute
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
+  '/settings': typeof SettingsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/requests': typeof RequestsIndexRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/labs': typeof LabsRoute
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
+  '/settings': typeof SettingsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/requests/': typeof RequestsIndexRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/labs'
     | '/notifications'
     | '/register'
+    | '/settings'
     | '/requests/$requestId'
     | '/requests/'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/labs'
     | '/notifications'
     | '/register'
+    | '/settings'
     | '/requests/$requestId'
     | '/requests'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/labs'
     | '/notifications'
     | '/register'
+    | '/settings'
     | '/requests/$requestId'
     | '/requests/'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   LabsRoute: typeof LabsRoute
   NotificationsRoute: typeof NotificationsRoute
   RegisterRoute: typeof RegisterRoute
+  SettingsRoute: typeof SettingsRoute
   RequestsRequestIdRoute: typeof RequestsRequestIdRoute
   RequestsIndexRoute: typeof RequestsIndexRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/requests/': {
       id: '/requests/'
       path: '/requests'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabsRoute: LabsRoute,
   NotificationsRoute: NotificationsRoute,
   RegisterRoute: RegisterRoute,
+  SettingsRoute: SettingsRoute,
   RequestsRequestIdRoute: RequestsRequestIdRoute,
   RequestsIndexRoute: RequestsIndexRoute,
 }
