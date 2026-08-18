@@ -555,7 +555,7 @@ export async function mockRequest<T>(
         type: String(body?.["type"] ?? "general"),
         status: "open",
         title: String(body?.["title"] ?? "New request"),
-        description: body?.["description"] as string | undefined,
+        description: String(body?.["description"] ?? ""),
         department: (body?.["department"] as string) ?? "Registrar",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -627,11 +627,11 @@ export async function mockRequest<T>(
       const booking: LabBooking = {
         id: uid("BKG"),
         resource_id: String(body?.["resource_id"] ?? "LAB-1"),
-        resource_name: resource?.name,
+        resource_name: resource?.name ?? "Lab",
         start_time: String(body?.["start_time"] ?? new Date().toISOString()),
         end_time: String(body?.["end_time"] ?? new Date().toISOString()),
-        course_code: body?.["course_code"] as string | undefined,
-        faculty_reference: body?.["faculty_reference"] as string | undefined,
+        course_code: String(body?.["course_code"] ?? ""),
+        faculty_reference: String(body?.["faculty_reference"] ?? ""),
         status: "pending",
       };
       labBookings.push(booking);
@@ -682,7 +682,7 @@ export async function mockRequest<T>(
         kbChunks.push({
           chunk_id: uid("CHK"),
           document_id: doc.id,
-          version: doc.version,
+          version: doc.version ?? "v1.0",
           page: i + 1,
           text: p.slice(0, 400),
         });
