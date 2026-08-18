@@ -13,7 +13,8 @@ export const Route = createFileRoute("/admin/audit")({
       { title: "Audit Explorer · Campus Service Copilot" },
       {
         name: "description",
-        content: "Browse the hash-chained audit trail of agent actions, approvals and system events.",
+        content:
+          "Browse the hash-chained audit trail of agent actions, approvals and system events.",
       },
       { property: "og:title", content: "Audit Explorer · Campus Service Copilot" },
       { property: "og:description", content: "Immutable audit log for campus service operations." },
@@ -46,7 +47,10 @@ function AuditExplorer() {
         {query.isLoading ? <LoadingBlock /> : null}
         {query.error ? <ErrorBlock error={query.error} /> : null}
         {!query.isLoading && events.length === 0 ? (
-          <EmptyState title="No audit events" hint="Events will appear once the backend audit pipeline is active." />
+          <EmptyState
+            title="No audit events"
+            hint="Events will appear once the backend audit pipeline is active."
+          />
         ) : null}
 
         <ul className="space-y-2">
@@ -56,13 +60,18 @@ function AuditExplorer() {
                 <p className="text-sm font-medium capitalize">
                   {event.action?.replace(/_/g, " ")} · {event.entity_type}
                 </p>
-                <span className="font-mono text-xs text-muted-foreground">#{event.id.slice(0, 8)}</span>
+                <span className="font-mono text-xs text-muted-foreground">
+                  #{event.id.slice(0, 8)}
+                </span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {event.actor_id ? `Actor ${event.actor_id.slice(0, 8)}` : "System"} · {formatDate(event.created_at)}
+                {event.actor_id ? `Actor ${event.actor_id.slice(0, 8)}` : "System"} ·{" "}
+                {formatDate(event.created_at)}
               </p>
               {event.hash ? (
-                <p className="mt-2 font-mono text-[11px] text-muted-foreground">Hash: {event.hash.slice(0, 32)}…</p>
+                <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+                  Hash: {event.hash.slice(0, 32)}…
+                </p>
               ) : null}
             </li>
           ))}

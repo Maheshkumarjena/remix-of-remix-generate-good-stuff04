@@ -13,7 +13,8 @@ export const Route = createFileRoute("/admin/policy-conflicts")({
       { title: "Policy Conflicts · Campus Service Copilot" },
       {
         name: "description",
-        content: "Review contradictions and overlaps detected across institutional policy documents.",
+        content:
+          "Review contradictions and overlaps detected across institutional policy documents.",
       },
       { property: "og:title", content: "Policy Conflicts · Campus Service Copilot" },
       { property: "og:description", content: "Detected policy contradictions and overlaps." },
@@ -46,14 +47,21 @@ function PolicyConflicts() {
         {query.isLoading ? <LoadingBlock /> : null}
         {query.error ? <ErrorBlock error={query.error} /> : null}
         {!query.isLoading && conflicts.length === 0 ? (
-          <EmptyState title="No conflicts detected" hint="Run a policy scan to surface contradictions." />
+          <EmptyState
+            title="No conflicts detected"
+            hint="Run a policy scan to surface contradictions."
+          />
         ) : null}
 
         <ul className="space-y-2">
           {conflicts.map((conflict) => (
             <li key={conflict.id} className="panel p-4">
-              <p className="text-sm font-medium">{conflict.summary ?? `Conflict ${conflict.id.slice(0, 8)}`}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Detected {formatDate(conflict.detected_at)}</p>
+              <p className="text-sm font-medium">
+                {conflict.summary ?? `Conflict ${conflict.id.slice(0, 8)}`}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Detected {formatDate(conflict.detected_at)}
+              </p>
             </li>
           ))}
         </ul>

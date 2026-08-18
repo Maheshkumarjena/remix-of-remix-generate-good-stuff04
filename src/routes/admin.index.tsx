@@ -3,7 +3,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileSearch, Library, ScrollText } from "lucide-react";
 
 import { AppShell, PageHeader } from "@/components/AppShell";
-import { EmptyState, ErrorBlock, LoadingBlock, Stat, StatusBadge, formatDate, listOf } from "@/components/common";
+import {
+  EmptyState,
+  ErrorBlock,
+  LoadingBlock,
+  Stat,
+  StatusBadge,
+  formatDate,
+  listOf,
+} from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useAuth, useRequireRole } from "@/lib/auth";
@@ -16,7 +24,8 @@ export const Route = createFileRoute("/admin/")({
       { title: "Admin Governance · Campus Service Copilot" },
       {
         name: "description",
-        content: "Governance dashboard for administrators: audit trail, policy conflicts and knowledge base health.",
+        content:
+          "Governance dashboard for administrators: audit trail, policy conflicts and knowledge base health.",
       },
       { property: "og:title", content: "Admin Governance · Campus Service Copilot" },
       {
@@ -60,7 +69,8 @@ function AdminDashboard() {
   });
 
   useRealtime(authUser?.id, (event) => {
-    if (event.type === "approval.created") void queryClient.invalidateQueries({ queryKey: ["approvals"] });
+    if (event.type === "approval.created")
+      void queryClient.invalidateQueries({ queryKey: ["approvals"] });
     if (event.type === "audit.created") void queryClient.invalidateQueries({ queryKey: ["audit"] });
   });
 
@@ -145,12 +155,17 @@ function AdminDashboard() {
               {conflicts.isLoading ? <LoadingBlock /> : null}
               {conflicts.error ? <ErrorBlock error={conflicts.error} /> : null}
               {!conflicts.isLoading && conflictList.length === 0 ? (
-                <EmptyState title="No conflicts detected" hint="Policy contradictions will surface here." />
+                <EmptyState
+                  title="No conflicts detected"
+                  hint="Policy contradictions will surface here."
+                />
               ) : null}
               <ul className="divide-y divide-border">
                 {conflictList.map((conflict) => (
                   <li key={conflict.id} className="px-3 py-3">
-                    <p className="text-sm font-medium">{conflict.summary ?? `Conflict ${conflict.id.slice(0, 8)}`}</p>
+                    <p className="text-sm font-medium">
+                      {conflict.summary ?? `Conflict ${conflict.id.slice(0, 8)}`}
+                    </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       Detected {formatDate(conflict.detected_at)}
                     </p>
@@ -174,7 +189,10 @@ function AdminDashboard() {
               {kb.isLoading ? <LoadingBlock /> : null}
               {kb.error ? <ErrorBlock error={kb.error} /> : null}
               {!kb.isLoading && kbList.length === 0 ? (
-                <EmptyState title="No documents indexed" hint="Upload institutional documents to ground agent answers." />
+                <EmptyState
+                  title="No documents indexed"
+                  hint="Upload institutional documents to ground agent answers."
+                />
               ) : null}
               <ul className="divide-y divide-border">
                 {kbList.map((doc) => (
@@ -199,7 +217,12 @@ function AdminDashboard() {
 }
 
 function totalFrom(payload: unknown): number {
-  if (payload && typeof payload === "object" && "total" in payload && typeof payload.total === "number") {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "total" in payload &&
+    typeof payload.total === "number"
+  ) {
     return payload.total;
   }
   return listOf<ServiceRequest | Approval>(payload).length;
