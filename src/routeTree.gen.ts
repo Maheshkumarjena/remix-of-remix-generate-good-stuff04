@@ -24,6 +24,7 @@ import { Route as RequestsIndexRouteImport } from './routes/requests.index'
 import { Route as RequestsRequestIdRouteImport } from './routes/requests.$requestId'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as StaffApprovalsRouteImport } from './routes/staff.approvals'
+import { Route as StaffKbRouteImport } from './routes/staff.kb'
 import { Route as StaffRequestsRouteImport } from './routes/staff.requests'
 
 const IndexRoute = IndexRouteImport.update({
@@ -101,6 +102,11 @@ const StaffApprovalsRoute = StaffApprovalsRouteImport.update({
   path: '/staff/approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffKbRoute = StaffKbRouteImport.update({
+  id: '/staff/kb',
+  path: '/staff/kb',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StaffRequestsRoute = StaffRequestsRouteImport.update({
   id: '/staff/requests',
   path: '/staff/requests',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/admin/policy-conflicts': typeof AdminPolicyConflictsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
+  '/staff/kb': typeof StaffKbRoute
   '/staff/requests': typeof StaffRequestsRoute
   '/admin/': typeof AdminIndexRoute
   '/requests/': typeof RequestsIndexRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/admin/policy-conflicts': typeof AdminPolicyConflictsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
+  '/staff/kb': typeof StaffKbRoute
   '/staff/requests': typeof StaffRequestsRoute
   '/admin': typeof AdminIndexRoute
   '/requests': typeof RequestsIndexRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/admin/policy-conflicts': typeof AdminPolicyConflictsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
+  '/staff/kb': typeof StaffKbRoute
   '/staff/requests': typeof StaffRequestsRoute
   '/admin/': typeof AdminIndexRoute
   '/requests/': typeof RequestsIndexRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/admin/policy-conflicts'
     | '/requests/$requestId'
     | '/staff/approvals'
+    | '/staff/kb'
     | '/staff/requests'
     | '/admin/'
     | '/requests/'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/admin/policy-conflicts'
     | '/requests/$requestId'
     | '/staff/approvals'
+    | '/staff/kb'
     | '/staff/requests'
     | '/admin'
     | '/requests'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/admin/policy-conflicts'
     | '/requests/$requestId'
     | '/staff/approvals'
+    | '/staff/kb'
     | '/staff/requests'
     | '/admin/'
     | '/requests/'
@@ -232,6 +244,7 @@ export interface RootRouteChildren {
   AdminPolicyConflictsRoute: typeof AdminPolicyConflictsRoute
   RequestsRequestIdRoute: typeof RequestsRequestIdRoute
   StaffApprovalsRoute: typeof StaffApprovalsRoute
+  StaffKbRoute: typeof StaffKbRoute
   StaffRequestsRoute: typeof StaffRequestsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   RequestsIndexRoute: typeof RequestsIndexRoute
@@ -345,6 +358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffApprovalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/kb': {
+      id: '/staff/kb'
+      path: '/staff/kb'
+      fullPath: '/staff/kb'
+      preLoaderRoute: typeof StaffKbRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/staff/requests': {
       id: '/staff/requests'
       path: '/staff/requests'
@@ -368,6 +388,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPolicyConflictsRoute: AdminPolicyConflictsRoute,
   RequestsRequestIdRoute: RequestsRequestIdRoute,
   StaffApprovalsRoute: StaffApprovalsRoute,
+  StaffKbRoute: StaffKbRoute,
   StaffRequestsRoute: StaffRequestsRoute,
   AdminIndexRoute: AdminIndexRoute,
   RequestsIndexRoute: RequestsIndexRoute,
