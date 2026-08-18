@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatRouteImport } from './routes/chat'
+import { Route as GrievancesRouteImport } from './routes/grievances'
 import { Route as LabsRouteImport } from './routes/labs'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RequestsIndexRouteImport } from './routes/requests.index'
@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GrievancesRoute = GrievancesRouteImport.update({
+  id: '/grievances',
+  path: '/grievances',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabsRoute = LabsRouteImport.update({
@@ -50,6 +56,7 @@ const RequestsRequestIdRoute = RequestsRequestIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
+  '/grievances': typeof GrievancesRoute
   '/labs': typeof LabsRoute
   '/register': typeof RegisterRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
+  '/grievances': typeof GrievancesRoute
   '/labs': typeof LabsRoute
   '/register': typeof RegisterRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
+  '/grievances': typeof GrievancesRoute
   '/labs': typeof LabsRoute
   '/register': typeof RegisterRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
@@ -77,17 +86,25 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/chat'
+    | '/grievances'
     | '/labs'
     | '/register'
     | '/requests/$requestId'
     | '/requests/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/chat' | '/labs' | '/register' | '/requests/$requestId' | '/requests'
+    | '/'
+    | '/chat'
+    | '/grievances'
+    | '/labs'
+    | '/register'
+    | '/requests/$requestId'
+    | '/requests'
   id:
     | '__root__'
     | '/'
     | '/chat'
+    | '/grievances'
     | '/labs'
     | '/register'
     | '/requests/$requestId'
@@ -97,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChatRoute: typeof ChatRoute
+  GrievancesRoute: typeof GrievancesRoute
   LabsRoute: typeof LabsRoute
   RegisterRoute: typeof RegisterRoute
   RequestsRequestIdRoute: typeof RequestsRequestIdRoute
@@ -117,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/grievances': {
+      id: '/grievances'
+      path: '/grievances'
+      fullPath: '/grievances'
+      preLoaderRoute: typeof GrievancesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/labs': {
@@ -153,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChatRoute: ChatRoute,
+  GrievancesRoute: GrievancesRoute,
   LabsRoute: LabsRoute,
   RegisterRoute: RegisterRoute,
   RequestsRequestIdRoute: RequestsRequestIdRoute,
