@@ -17,6 +17,9 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as AdminKbRouteImport } from './routes/admin.kb'
+import { Route as AdminPolicyConflictsRouteImport } from './routes/admin.policy-conflicts'
 import { Route as RequestsIndexRouteImport } from './routes/requests.index'
 import { Route as RequestsRequestIdRouteImport } from './routes/requests.$requestId'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
@@ -63,6 +66,21 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/admin/audit',
+  path: '/admin/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminKbRoute = AdminKbRouteImport.update({
+  id: '/admin/kb',
+  path: '/admin/kb',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPolicyConflictsRoute = AdminPolicyConflictsRouteImport.update({
+  id: '/admin/policy-conflicts',
+  path: '/admin/policy-conflicts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RequestsIndexRoute = RequestsIndexRouteImport.update({
   id: '/requests/',
   path: '/requests/',
@@ -97,6 +115,9 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/kb': typeof AdminKbRoute
+  '/admin/policy-conflicts': typeof AdminPolicyConflictsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
   '/staff/requests': typeof StaffRequestsRoute
@@ -112,6 +133,9 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/kb': typeof AdminKbRoute
+  '/admin/policy-conflicts': typeof AdminPolicyConflictsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
   '/staff/requests': typeof StaffRequestsRoute
@@ -128,6 +152,9 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/kb': typeof AdminKbRoute
+  '/admin/policy-conflicts': typeof AdminPolicyConflictsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
   '/staff/requests': typeof StaffRequestsRoute
@@ -145,6 +172,9 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/register'
     | '/settings'
+    | '/admin/audit'
+    | '/admin/kb'
+    | '/admin/policy-conflicts'
     | '/requests/$requestId'
     | '/staff/approvals'
     | '/staff/requests'
@@ -160,6 +190,9 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/register'
     | '/settings'
+    | '/admin/audit'
+    | '/admin/kb'
+    | '/admin/policy-conflicts'
     | '/requests/$requestId'
     | '/staff/approvals'
     | '/staff/requests'
@@ -175,6 +208,9 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/register'
     | '/settings'
+    | '/admin/audit'
+    | '/admin/kb'
+    | '/admin/policy-conflicts'
     | '/requests/$requestId'
     | '/staff/approvals'
     | '/staff/requests'
@@ -191,6 +227,9 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   RegisterRoute: typeof RegisterRoute
   SettingsRoute: typeof SettingsRoute
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminKbRoute: typeof AdminKbRoute
+  AdminPolicyConflictsRoute: typeof AdminPolicyConflictsRoute
   RequestsRequestIdRoute: typeof RequestsRequestIdRoute
   StaffApprovalsRoute: typeof StaffApprovalsRoute
   StaffRequestsRoute: typeof StaffRequestsRoute
@@ -257,6 +296,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/admin/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/kb': {
+      id: '/admin/kb'
+      path: '/admin/kb'
+      fullPath: '/admin/kb'
+      preLoaderRoute: typeof AdminKbRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/policy-conflicts': {
+      id: '/admin/policy-conflicts'
+      path: '/admin/policy-conflicts'
+      fullPath: '/admin/policy-conflicts'
+      preLoaderRoute: typeof AdminPolicyConflictsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/requests/': {
       id: '/requests/'
       path: '/requests'
@@ -303,6 +363,9 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   RegisterRoute: RegisterRoute,
   SettingsRoute: SettingsRoute,
+  AdminAuditRoute: AdminAuditRoute,
+  AdminKbRoute: AdminKbRoute,
+  AdminPolicyConflictsRoute: AdminPolicyConflictsRoute,
   RequestsRequestIdRoute: RequestsRequestIdRoute,
   StaffApprovalsRoute: StaffApprovalsRoute,
   StaffRequestsRoute: StaffRequestsRoute,
