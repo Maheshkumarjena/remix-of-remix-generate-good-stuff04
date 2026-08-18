@@ -55,7 +55,13 @@ function toneFor(value: string): keyof typeof tone {
   return "neutral";
 }
 
-export function StatusBadge({ value, className }: { value?: string | number | null; className?: string }) {
+export function StatusBadge({
+  value,
+  className,
+}: {
+  value?: string | number | null | undefined;
+  className?: string | undefined;
+}) {
   if (value === undefined || value === null || value === "") return null;
   const text = String(value);
   return (
