@@ -75,7 +75,7 @@ function LabsPage() {
           start_time: new Date(`${date}T${form.start}:00`).toISOString(),
           end_time: new Date(`${date}T${form.end}:00`).toISOString(),
           course_code: form.course_code || undefined,
-          faculty_reference: form.faculty_reference || undefined,
+          faculty_ref: form.faculty_reference || undefined,
         },
       }),
     onSuccess: () => {

@@ -79,14 +79,17 @@ function ChatPage() {
           setStreaming((prev) => prev + String(event["token"] ?? event["content"] ?? ""));
           break;
         case "message.complete": {
-          const content = String(event["content"] ?? "");
+          const msg = (event["message"] as Record<string, unknown> | undefined) ?? undefined;
+          const content = String(msg?.["content"] ?? event["content"] ?? "");
           setMessages((prev) => [
             ...prev,
             {
-              id: String(event["message_id"] ?? crypto.randomUUID()),
+              id: String(msg?.["id"] ?? event["message_id"] ?? crypto.randomUUID()),
               role: "assistant",
               content,
-              cited_chunk_ids: (event["cited_chunk_ids"] as string[] | undefined) ?? [],
+              cited_chunk_ids:
+                (msg?.["cited_chunk_ids"] as string[] | undefined) ??
+                ((event["cited_chunk_ids"] as string[] | undefined) ?? []),
             },
           ]);
           setStreaming("");

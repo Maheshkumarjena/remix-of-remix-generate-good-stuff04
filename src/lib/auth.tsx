@@ -18,7 +18,7 @@ export interface RegisterPayload {
   email: string;
   password: string;
   role: Role;
-  department?: string;
+  department_id?: string;
   preferred_language?: string;
 }
 

@@ -8,6 +8,12 @@ export interface RealtimeEvent {
   [key: string]: unknown;
 }
 
+function normalizeEvent(event: RealtimeEvent): RealtimeEvent {
+  const payload = event["payload"];
+  if (!payload || typeof payload !== "object") return event;
+  return { ...((payload as Record<string, unknown>) ?? {}), type: event.type };
+}
+
 let socket: Socket | null = null;
 let currentKey = "";
 
@@ -41,7 +47,7 @@ export function useRealtime(
     if (isDemoMode()) return; // no realtime channel in demo mode
     const s = connect(userId, sessionId);
 
-    const listener = (event: RealtimeEvent) => handlerRef.current(event);
+    const listener = (event: RealtimeEvent) => handlerRef.current(normalizeEvent(event));
     s.on("event", listener);
     return () => {
       s.off("event", listener);

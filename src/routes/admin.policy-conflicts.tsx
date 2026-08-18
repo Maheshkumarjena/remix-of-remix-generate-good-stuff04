@@ -28,7 +28,7 @@ function PolicyConflicts() {
 
   const query = useQuery({
     queryKey: ["policy-conflicts"],
-    queryFn: () => api<unknown>("/policy-conflicts?page=1&limit=50"),
+    queryFn: () => api<unknown>("/admin/analytics/policy-conflicts?page=1&limit=50"),
     enabled: Boolean(user),
   });
 

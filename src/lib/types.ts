@@ -7,6 +7,7 @@ export interface User {
   role: Role;
   department?: string | null;
   preferred_language?: string | null;
+  notification_prefs?: Record<string, boolean> | null;
   notification_preferences?: Record<string, boolean> | null;
 }
 
@@ -154,4 +155,32 @@ export interface PolicyConflict {
   document_b?: Record<string, unknown>;
   summary?: string;
   detected_at?: string;
+}
+
+export interface RequestsSummary {
+  by_type: { request_type: string; count: number }[];
+  by_status: { status: string; count: number }[];
+}
+
+export interface ResolutionTimePoint {
+  date: string;
+  avg_resolution_hours: number;
+}
+
+export interface ResolutionTimeSeries {
+  points: ResolutionTimePoint[];
+}
+
+export interface BottleneckItem {
+  department: string;
+  step_name: string;
+  overdue_count: number;
+}
+
+export interface BottlenecksResponse {
+  items: BottleneckItem[];
+}
+
+export interface AuditVerifyResponse {
+  intact: boolean;
 }

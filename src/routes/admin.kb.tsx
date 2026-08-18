@@ -38,7 +38,7 @@ function KnowledgeBase() {
 
   const query = useQuery({
     queryKey: ["kb"],
-    queryFn: () => api<unknown>("/kb?page=1&limit=50"),
+    queryFn: () => api<unknown>("/kb/documents?page=1&limit=50"),
     enabled: Boolean(user),
   });
 

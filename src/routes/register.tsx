@@ -46,7 +46,7 @@ function RegisterPage() {
     email: "",
     password: "",
     role: "student" as Role,
-    department: "",
+    department_id: "",
     preferred_language: "en",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -144,8 +144,8 @@ function RegisterPage() {
           <Label htmlFor="department">Department</Label>
           <Input
             id="department"
-            value={form.department}
-            onChange={(e) => setForm({ ...form, department: e.target.value })}
+            value={form.department_id}
+            onChange={(e) => setForm({ ...form, department_id: e.target.value })}
             placeholder="Computer Science"
           />
         </div>

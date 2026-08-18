@@ -54,7 +54,7 @@ function NotificationsPage() {
     mutationFn: (ids: string[] | "all") =>
       api("/notifications/mark-read", {
         method: "POST",
-        body: ids === "all" ? { all: true } : { notification_ids: ids },
+        body: ids === "all" ? {} : { ids },
       }),
     onSuccess: () => {
       setSelected([]);

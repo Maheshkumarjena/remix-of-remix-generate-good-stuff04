@@ -519,7 +519,7 @@ export async function mockRequest<T>(
       name: String(body?.["name"] ?? "Demo User"),
       email: String(body?.["email"] ?? "demo@campus.edu"),
       role: (body?.["role"] as Role) ?? "student",
-      department: (body?.["department"] as string) ?? null,
+      department: (body?.["department_id"] as string) ?? (body?.["department"] as string) ?? null,
       preferred_language: (body?.["preferred_language"] as string) ?? "en",
       notification_preferences: { email: true, push: true, sms: false },
     };
@@ -535,7 +535,14 @@ export async function mockRequest<T>(
     const user = loadSession();
     if (!user) throw new MockNotFound("Not signed in");
     if (m === "PATCH" || m === "PUT") {
-      const next = { ...user, ...(body as Partial<User>) };
+      const next = {
+        ...user,
+        ...(body as Partial<User>),
+        notification_preferences:
+          ((body?.["notification_prefs"] as Record<string, boolean> | undefined) ??
+            (body?.["notification_preferences"] as Record<string, boolean> | undefined) ??
+            user.notification_preferences),
+      };
       saveSession(next);
       return next as unknown as T;
     }
@@ -552,11 +559,11 @@ export async function mockRequest<T>(
     if (seg.length === 1 && m === "POST") {
       const req: ServiceRequest = {
         id: uid("REQ"),
-        type: String(body?.["type"] ?? "general"),
+        type: String(body?.["request_type"] ?? body?.["type"] ?? "general"),
         status: "open",
-        title: String(body?.["title"] ?? "New request"),
+        title: String(body?.["title"] ?? body?.["request_type"] ?? "New request"),
         description: String(body?.["description"] ?? ""),
-        department: (body?.["department"] as string) ?? "Registrar",
+        department: (body?.["department_id"] as string) ?? (body?.["department"] as string) ?? "Registrar",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         timeline: [{ status: "created", created_at: new Date().toISOString() }],
@@ -588,7 +595,10 @@ export async function mockRequest<T>(
   // ---- notifications
   if (seg[0] === "notifications") {
     if (seg[1] === "mark-read") {
-      const ids = (body?.["ids"] as string[] | undefined) ?? [];
+      const ids =
+        ((body?.["ids"] as string[] | undefined) ??
+          (body?.["notification_ids"] as string[] | undefined) ??
+          []);
       notifications.forEach((n) => {
         if (ids.length === 0 || ids.includes(n.id)) n.read = true;
       });
@@ -601,6 +611,29 @@ export async function mockRequest<T>(
 
   // ---- grievances
   if (seg[0] === "grievances") {
+    if (seg.length >= 2) {
+      const grievance = grievances.find((g) => g.id === seg[1]);
+      if (!grievance) throw new MockNotFound("Grievance not found");
+      if (seg[2] === "escalate" && m === "POST") {
+        const level = Number(grievance.escalation_level ?? 1);
+        grievance.escalation_level = level + 1;
+        grievance.status = "escalated";
+        return {
+          id: grievance.id,
+          escalation_level: grievance.escalation_level,
+          escalated_at: new Date().toISOString(),
+        } as unknown as T;
+      }
+      return {
+        ...grievance,
+        escalation_history: [
+          {
+            escalation_level: grievance.escalation_level ?? 1,
+            changed_at: grievance.created_at ?? new Date().toISOString(),
+          },
+        ],
+      } as unknown as T;
+    }
     if (m === "POST") {
       const g: Grievance = {
         id: uid("GRV"),
@@ -631,7 +664,7 @@ export async function mockRequest<T>(
         start_time: String(body?.["start_time"] ?? new Date().toISOString()),
         end_time: String(body?.["end_time"] ?? new Date().toISOString()),
         course_code: String(body?.["course_code"] ?? ""),
-        faculty_reference: String(body?.["faculty_reference"] ?? ""),
+        faculty_reference: String(body?.["faculty_ref"] ?? body?.["faculty_reference"] ?? ""),
         status: "pending",
       };
       labBookings.push(booking);
@@ -649,9 +682,14 @@ export async function mockRequest<T>(
 
   // ---- knowledge base
   if (seg[0] === "kb") {
+    const kbMode = seg[1] === "documents" ? 2 : 1;
+    const kbAction = seg[kbMode];
+    const kbDocId = seg[kbMode];
+
     if (seg[1] === "search") {
       const q = String(body?.["query"] ?? search.get("q") ?? "").toLowerCase();
       const terms = q.split(/\s+/).filter(Boolean);
+      const limit = Number(body?.["top_k"] ?? body?.["limit"] ?? 5);
       const scored = kbChunks
         .map((c) => {
           const text = (c.text ?? "").toLowerCase();
@@ -660,10 +698,10 @@ export async function mockRequest<T>(
           return { ...c, similarity };
         })
         .sort((a, b) => (b.similarity ?? 0) - (a.similarity ?? 0))
-        .slice(0, 5);
+        .slice(0, limit > 0 ? limit : 5);
       return { data: scored } as unknown as T;
     }
-    if (seg.length === 1 && m === "POST") {
+    if ((seg.length === 1 || (seg[1] === "documents" && seg.length === 2)) && m === "POST") {
       const content = String(body?.["content"] ?? "");
       const doc: KbDocument = {
         id: uid("KB"),
@@ -688,6 +726,7 @@ export async function mockRequest<T>(
         });
       });
       doc.chunk_count = Math.max(paras.length, 1);
+
       kbDocs.unshift(doc);
       auditEvents.unshift({
         id: uid("aud"),
@@ -700,16 +739,78 @@ export async function mockRequest<T>(
       });
       return doc as unknown as T;
     }
-    if (seg.length > 1 && m === "DELETE") {
-      const i = kbDocs.findIndex((d) => d.id === seg[1]);
+    if (m === "DELETE" && ((seg.length > 1 && seg[1] !== "documents") || seg.length > 2)) {
+      const i = kbDocs.findIndex((d) => d.id === (seg[1] === "documents" ? seg[2] : seg[1]));
       if (i >= 0) kbDocs.splice(i, 1);
       return ok;
     }
     return page(kbDocs, search) as unknown as T;
   }
 
+  // ---- admin analytics
+  if (seg[0] === "admin" && seg[1] === "analytics") {
+    if (seg[2] === "requests-summary") {
+      const byTypeMap = new Map<string, number>();
+      const byStatusMap = new Map<string, number>();
+      requests.forEach((r) => {
+        byTypeMap.set(r.type, (byTypeMap.get(r.type) ?? 0) + 1);
+        byStatusMap.set(r.status, (byStatusMap.get(r.status) ?? 0) + 1);
+      });
+      return {
+        by_type: Array.from(byTypeMap.entries()).map(([request_type, count]) => ({ request_type, count })),
+        by_status: Array.from(byStatusMap.entries()).map(([status, count]) => ({ status, count })),
+      } as unknown as T;
+    }
+
+    if (seg[2] === "resolution-time") {
+      return {
+        points: [
+          { date: "2026-08-15", avg_resolution_hours: 1.8 },
+          { date: "2026-08-16", avg_resolution_hours: 1.5 },
+          { date: "2026-08-17", avg_resolution_hours: 1.25 },
+        ],
+      } as unknown as T;
+    }
+
+    if (seg[2] === "bottlenecks") {
+      return {
+        items: [
+          {
+            department: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+            step_name: "Issue bonafide certificate",
+            overdue_count: 1,
+          },
+        ],
+      } as unknown as T;
+    }
+
+    if (seg[2] === "policy-conflicts") {
+      return page(policyConflicts, search) as unknown as T;
+    }
+  }
+
   // ---- audit / policy
-  if (seg[0] === "audit") return page(auditEvents, search) as unknown as T;
+  if (seg[0] === "audit") {
+    if (seg[1] === "search") {
+      const entityType = search.get("entity_type")?.toLowerCase() ?? "";
+      const action = search.get("action")?.toLowerCase() ?? "";
+      const filtered = auditEvents.filter((event) => {
+        const entityOk = !entityType || event.entity_type.toLowerCase().includes(entityType);
+        const actionOk = !action || event.action.toLowerCase().includes(action);
+        return entityOk && actionOk;
+      });
+      return page(filtered, search) as unknown as T;
+    }
+    if (seg[1] === "verify" && seg[2] && seg[3]) {
+      const hasEntity = auditEvents.some((event) => event.entity_type === seg[2] && event.entity_id === seg[3]);
+      return { intact: hasEntity } as unknown as T;
+    }
+    if (seg.length >= 3) {
+      const entityEvents = auditEvents.filter((event) => event.entity_type === seg[1] && event.entity_id === seg[2]);
+      return entityEvents as unknown as T;
+    }
+    return page(auditEvents, search) as unknown as T;
+  }
   if (seg[0] === "policy-conflicts") return page(policyConflicts, search) as unknown as T;
 
   // ---- agent

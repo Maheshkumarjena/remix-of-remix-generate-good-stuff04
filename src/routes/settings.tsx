@@ -48,7 +48,9 @@ function SettingsPage() {
   const { logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [language, setLanguage] = useState(user?.preferred_language ?? "en");
-  const [prefs, setPrefs] = useState<Record<string, boolean>>(user?.notification_preferences ?? { email: true });
+  const [prefs, setPrefs] = useState<Record<string, boolean>>(
+    user?.notification_prefs ?? user?.notification_preferences ?? { email: true },
+  );
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
@@ -56,7 +58,7 @@ function SettingsPage() {
     try {
       await api("/users/me", {
         method: "PATCH",
-        body: { preferred_language: language, notification_preferences: prefs },
+        body: { preferred_language: language, notification_prefs: prefs },
       });
       await refreshUser();
       toast.success("Preferences saved");

@@ -45,7 +45,7 @@ function GrievancesPage() {
   const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState("all");
-  const [selected, setSelected] = useState<Grievance | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState({
     category: "hostel",
     description: "",
@@ -59,10 +59,17 @@ function GrievancesPage() {
     enabled: Boolean(user),
   });
 
+  const detailQuery = useQuery({
+    queryKey: ["grievance", selectedId],
+    queryFn: () => api<Grievance>(`/grievances/${selectedId}`),
+    enabled: Boolean(user && selectedId),
+  });
+
   useRealtime(authUser?.id, (event) => {
     if (event.type === "grievance.escalated") {
       toast.warning("A grievance was escalated");
       void queryClient.invalidateQueries({ queryKey: ["grievances"] });
+      void queryClient.invalidateQueries({ queryKey: ["grievance"] });
     }
   });
 
@@ -88,8 +95,21 @@ function GrievancesPage() {
     onError: (err) => toast.error(err instanceof Error ? err.message : "Could not file grievance"),
   });
 
+  const escalate = useMutation({
+    mutationFn: (id: string) => api(`/grievances/${id}/escalate`, { method: "POST" }),
+    onSuccess: () => {
+      toast.success("Grievance escalated");
+      void queryClient.invalidateQueries({ queryKey: ["grievances"] });
+      if (selectedId) void queryClient.invalidateQueries({ queryKey: ["grievance", selectedId] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Could not escalate grievance"),
+  });
+
   if (loading || !user) return null;
   const grievances = listOf<Grievance>(query.data);
+  const selectedFromList = selectedId ? grievances.find((g) => g.id === selectedId) ?? null : null;
+  const selected = detailQuery.data ?? selectedFromList;
+  const canEscalate = ["staff", "admin", "warden"].includes(user.role);
 
   return (
     <AppShell>
@@ -123,8 +143,10 @@ function GrievancesPage() {
           {grievances.map((g) => (
             <button
               key={g.id}
-              onClick={() => setSelected(g)}
-              className="panel block w-full p-4 text-left transition-colors hover:bg-secondary/60"
+              onClick={() => setSelectedId(g.id)}
+              className={`panel block w-full p-4 text-left transition-colors hover:bg-secondary/60 ${
+                selectedId === g.id ? "border-primary/50 bg-secondary/50" : ""
+              }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-medium capitalize">{g.category}</span>
@@ -141,33 +163,49 @@ function GrievancesPage() {
             </button>
           ))}
 
-          {selected ? (
+          {selectedId ? (
             <div className="panel space-y-3 border-primary/40 p-5">
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-sm font-semibold capitalize">{selected.category} detail</h2>
-                <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
+                <h2 className="font-display text-sm font-semibold capitalize">{selected?.category ?? "Grievance"} detail</h2>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)}>
                   Close
                 </Button>
               </div>
-              <p className="text-sm">{selected.description}</p>
-              <div className="flex flex-wrap gap-2">
-                <StatusBadge value={selected.status} />
-                <StatusBadge value={`escalation ${selected.escalation_level ?? 0}`} />
-              </div>
-              {selected.evidence_urls?.length ? (
-                <ul className="space-y-1 text-xs">
-                  {selected.evidence_urls.map((u) => (
-                    <li key={u}>
-                      <a href={u} target="_blank" rel="noreferrer" className="text-primary underline">
-                        {u}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+              {detailQuery.isLoading ? <LoadingBlock /> : null}
+              {!detailQuery.isLoading && selected ? (
+                <>
+                  <p className="text-sm">{selected.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <StatusBadge value={selected.status} />
+                    <StatusBadge value={`escalation ${selected.escalation_level ?? 0}`} />
+                  </div>
+                  {selected.evidence_urls?.length ? (
+                    <ul className="space-y-1 text-xs">
+                      {selected.evidence_urls.map((u) => (
+                        <li key={u}>
+                          <a href={u} target="_blank" rel="noreferrer" className="text-primary underline">
+                            {u}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {canEscalate ? (
+                    <Button
+                      variant="outline"
+                      disabled={escalate.isPending || !selected.id}
+                      onClick={() => escalate.mutate(selected.id)}
+                    >
+                      Escalate grievance
+                    </Button>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Escalation is handled by authorized staff when policy or SLA conditions are met.
+                    </p>
+                  )}
+                </>
               ) : null}
-              <p className="text-xs text-muted-foreground">
-                Escalation is driven by SLA breach rules and staff review, not manual student action.
-              </p>
+              {detailQuery.error ? <ErrorBlock error={detailQuery.error} /> : null}
             </div>
           ) : null}
         </section>

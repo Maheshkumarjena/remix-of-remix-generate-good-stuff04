@@ -16,7 +16,14 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useAuth, useRequireRole } from "@/lib/auth";
 import { useRealtime } from "@/lib/socket";
-import type { Approval, AuditEvent, KbDocument, PolicyConflict, ServiceRequest } from "@/lib/types";
+import type {
+  AuditEvent,
+  BottlenecksResponse,
+  KbDocument,
+  PolicyConflict,
+  RequestsSummary,
+  ResolutionTimeSeries,
+} from "@/lib/types";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -42,29 +49,34 @@ function AdminDashboard() {
   const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
 
-  const requests = useQuery({
-    queryKey: ["requests", "admin"],
-    queryFn: () => api<unknown>("/requests?page=1&limit=1"),
+  const requestSummary = useQuery({
+    queryKey: ["admin", "analytics", "requests-summary"],
+    queryFn: () => api<RequestsSummary>("/admin/analytics/requests-summary"),
     enabled: Boolean(user),
   });
-  const approvals = useQuery({
-    queryKey: ["approvals", "admin"],
-    queryFn: () => api<unknown>("/approvals?page=1&limit=1"),
+  const resolutionTime = useQuery({
+    queryKey: ["admin", "analytics", "resolution-time"],
+    queryFn: () => api<ResolutionTimeSeries>("/admin/analytics/resolution-time"),
+    enabled: Boolean(user),
+  });
+  const bottlenecks = useQuery({
+    queryKey: ["admin", "analytics", "bottlenecks"],
+    queryFn: () => api<BottlenecksResponse>("/admin/analytics/bottlenecks"),
     enabled: Boolean(user),
   });
   const audit = useQuery({
     queryKey: ["audit", "recent"],
-    queryFn: () => api<unknown>("/audit?page=1&limit=5"),
+    queryFn: () => api<unknown>("/audit/search?page=1&limit=5"),
     enabled: Boolean(user),
   });
   const conflicts = useQuery({
     queryKey: ["policy-conflicts", "recent"],
-    queryFn: () => api<unknown>("/policy-conflicts?page=1&limit=5"),
+    queryFn: () => api<unknown>("/admin/analytics/policy-conflicts?page=1&limit=5"),
     enabled: Boolean(user),
   });
   const kb = useQuery({
     queryKey: ["kb", "recent"],
-    queryFn: () => api<unknown>("/kb?page=1&limit=5"),
+    queryFn: () => api<unknown>("/kb/documents?page=1&limit=5"),
     enabled: Boolean(user),
   });
 
@@ -76,8 +88,18 @@ function AdminDashboard() {
 
   if (loading || !user) return null;
 
-  const requestTotal = totalFrom(requests.data);
-  const approvalTotal = totalFrom(approvals.data);
+  const byType = requestSummary.data?.by_type ?? [];
+  const byStatus = requestSummary.data?.by_status ?? [];
+  const requestTotal = byType.reduce((sum, item) => sum + item.count, 0);
+  const pendingTotal = byStatus
+    .filter((item) => ["pending", "in_progress", "pending_approval", "open"].includes(item.status))
+    .reduce((sum, item) => sum + item.count, 0);
+  const resolutionPoints = resolutionTime.data?.points ?? [];
+  const latestResolution = resolutionPoints.length
+    ? resolutionPoints[resolutionPoints.length - 1]?.avg_resolution_hours ?? 0
+    : 0;
+  const bottleneckItems = bottlenecks.data?.items ?? [];
+  const bottleneckTotal = bottleneckItems.reduce((sum, item) => sum + item.overdue_count, 0);
   const auditList = listOf<AuditEvent>(audit.data);
   const conflictList = listOf<PolicyConflict>(conflicts.data);
   const kbList = listOf<KbDocument>(kb.data);
@@ -97,13 +119,18 @@ function AdminDashboard() {
       <div className="space-y-6 p-6">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Stat label="Total requests" value={requestTotal} hint="Across all departments" />
-          <Stat label="Total approvals" value={approvalTotal} hint="Human-in-the-loop actions" />
+          <Stat label="Active queue" value={pendingTotal} hint="Pending and in-progress requests" />
           <Stat label="Policy conflicts" value={conflictList.length} hint="Detected mismatches" />
-          <Stat label="KB documents" value={kbList.length} hint="Indexed documents" />
+          <Stat
+            label="Avg resolution"
+            value={latestResolution ? `${latestResolution.toFixed(2)}h` : "0h"}
+            hint={`Overdue bottlenecks: ${bottleneckTotal}`}
+          />
         </div>
 
-        {requests.error ? <ErrorBlock error={requests.error} /> : null}
-        {approvals.error ? <ErrorBlock error={approvals.error} /> : null}
+        {requestSummary.error ? <ErrorBlock error={requestSummary.error} /> : null}
+        {resolutionTime.error ? <ErrorBlock error={resolutionTime.error} /> : null}
+        {bottlenecks.error ? <ErrorBlock error={bottlenecks.error} /> : null}
 
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="panel">
@@ -210,20 +237,37 @@ function AdminDashboard() {
               </ul>
             </div>
           </section>
+
+          <section className="panel lg:col-span-2">
+            <div className="flex items-center justify-between border-b border-border p-4">
+              <h2 className="font-display text-sm font-semibold">Operational bottlenecks</h2>
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/admin/policy-conflicts">Review conflicts</Link>
+              </Button>
+            </div>
+            <div className="p-2">
+              {bottlenecks.isLoading ? <LoadingBlock /> : null}
+              {!bottlenecks.isLoading && bottleneckItems.length === 0 ? (
+                <EmptyState title="No bottlenecks" hint="No overdue workflow steps detected right now." />
+              ) : null}
+              <ul className="divide-y divide-border">
+                {bottleneckItems.map((item) => (
+                  <li
+                    key={`${item.department}-${item.step_name}`}
+                    className="flex items-center justify-between gap-4 px-3 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{item.step_name}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Department {item.department}</p>
+                    </div>
+                    <StatusBadge value={`${item.overdue_count} overdue`} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
         </div>
       </div>
     </AppShell>
   );
-}
-
-function totalFrom(payload: unknown): number {
-  if (
-    payload &&
-    typeof payload === "object" &&
-    "total" in payload &&
-    typeof payload.total === "number"
-  ) {
-    return payload.total;
-  }
-  return listOf<ServiceRequest | Approval>(payload).length;
 }

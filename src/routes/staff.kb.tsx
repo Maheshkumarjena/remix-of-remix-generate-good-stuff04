@@ -45,22 +45,36 @@ function StaffKnowledgeBase() {
   const queryClient = useQueryClient();
 
   const [title, setTitle] = useState("");
+  const [documentId, setDocumentId] = useState("");
   const [version, setVersion] = useState("v1.0");
+  const [effectiveDate, setEffectiveDate] = useState("");
   const [content, setContent] = useState("");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<KbChunk[] | null>(null);
 
   const docsQuery = useQuery({
     queryKey: ["staff-kb"],
-    queryFn: () => api<unknown>("/kb?page=1&limit=50"),
+    queryFn: () => api<unknown>("/kb/documents?page=1&limit=50"),
     enabled: Boolean(user),
   });
 
   const create = useMutation({
-    mutationFn: () => api<KbDocument>("/kb", { method: "POST", body: { title, version, content } }),
+    mutationFn: () =>
+      api<KbDocument>("/kb/documents", {
+        method: "POST",
+        body: {
+          title,
+          document_id: documentId,
+          version,
+          content,
+          effective_date: effectiveDate || undefined,
+        },
+      }),
     onSuccess: (doc) => {
       toast.success(`Indexed “${doc.title}” (${doc.chunk_count ?? 0} chunks)`);
       setTitle("");
+      setDocumentId("");
+      setEffectiveDate("");
       setContent("");
       void queryClient.invalidateQueries({ queryKey: ["staff-kb"] });
     },
@@ -68,7 +82,7 @@ function StaffKnowledgeBase() {
   });
 
   const search = useMutation({
-    mutationFn: () => api<unknown>("/kb/search", { method: "POST", body: { query, limit: 5 } }),
+    mutationFn: () => api<unknown>("/kb/search", { method: "POST", body: { query, top_k: 5 } }),
     onSuccess: (data) => setResults(listOf<KbChunk>(data)),
     onError: (err) => toast.error(err instanceof Error ? err.message : "Search failed"),
   });
@@ -210,6 +224,27 @@ function StaffKnowledgeBase() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="kb-document-id">Document ID</Label>
+              <Input
+                id="kb-document-id"
+                value={documentId}
+                onChange={(e) => setDocumentId(e.target.value)}
+                placeholder="ACAD-CERT-001"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="kb-effective-date">Effective date</Label>
+              <Input
+                id="kb-effective-date"
+                type="date"
+                value={effectiveDate}
+                onChange={(e) => setEffectiveDate(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="kb-content">Markdown content</Label>
               <Textarea
                 id="kb-content"
@@ -224,7 +259,7 @@ function StaffKnowledgeBase() {
             <Button
               type="submit"
               className="w-full"
-              disabled={create.isPending || !title.trim() || !content.trim()}
+              disabled={create.isPending || !title.trim() || !documentId.trim() || !content.trim()}
             >
               {create.isPending ? "Indexing…" : "Index document"}
             </Button>
