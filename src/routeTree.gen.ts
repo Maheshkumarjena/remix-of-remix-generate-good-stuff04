@@ -20,6 +20,7 @@ import { Route as RequestsIndexRouteImport } from './routes/requests.index'
 import { Route as RequestsRequestIdRouteImport } from './routes/requests.$requestId'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as StaffApprovalsRouteImport } from './routes/staff.approvals'
+import { Route as StaffRequestsRouteImport } from './routes/staff.requests'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +77,11 @@ const StaffApprovalsRoute = StaffApprovalsRouteImport.update({
   path: '/staff/approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffRequestsRoute = StaffRequestsRouteImport.update({
+  id: '/staff/requests',
+  path: '/staff/requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
+  '/staff/requests': typeof StaffRequestsRoute
   '/requests/': typeof RequestsIndexRoute
   '/staff/': typeof StaffIndexRoute
 }
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
+  '/staff/requests': typeof StaffRequestsRoute
   '/requests': typeof RequestsIndexRoute
   '/staff': typeof StaffIndexRoute
 }
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/staff/approvals': typeof StaffApprovalsRoute
+  '/staff/requests': typeof StaffRequestsRoute
   '/requests/': typeof RequestsIndexRoute
   '/staff/': typeof StaffIndexRoute
 }
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/requests/$requestId'
     | '/staff/approvals'
+    | '/staff/requests'
     | '/requests/'
     | '/staff/'
   fileRoutesByTo: FileRoutesByTo
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/requests/$requestId'
     | '/staff/approvals'
+    | '/staff/requests'
     | '/requests'
     | '/staff'
   id:
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/requests/$requestId'
     | '/staff/approvals'
+    | '/staff/requests'
     | '/requests/'
     | '/staff/'
   fileRoutesById: FileRoutesById
@@ -169,6 +181,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   RequestsRequestIdRoute: typeof RequestsRequestIdRoute
   StaffApprovalsRoute: typeof StaffApprovalsRoute
+  StaffRequestsRoute: typeof StaffRequestsRoute
   RequestsIndexRoute: typeof RequestsIndexRoute
   StaffIndexRoute: typeof StaffIndexRoute
 }
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffApprovalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/requests': {
+      id: '/staff/requests'
+      path: '/staff/requests'
+      fullPath: '/staff/requests'
+      preLoaderRoute: typeof StaffRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -265,6 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   RequestsRequestIdRoute: RequestsRequestIdRoute,
   StaffApprovalsRoute: StaffApprovalsRoute,
+  StaffRequestsRoute: StaffRequestsRoute,
   RequestsIndexRoute: RequestsIndexRoute,
   StaffIndexRoute: StaffIndexRoute,
 }
