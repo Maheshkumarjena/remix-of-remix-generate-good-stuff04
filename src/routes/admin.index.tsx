@@ -103,7 +103,7 @@ function AdminDashboard() {
                 <h2 className="font-display text-sm font-semibold">Recent audit events</h2>
               </div>
               <Button asChild size="sm" variant="ghost">
-                <Link to="/admin/audit">View all</Link>
+                <Link to="/admin/policy-conflicts">View all</Link>
               </Button>
             </div>
             <div className="p-2">
@@ -138,7 +138,7 @@ function AdminDashboard() {
                 <h2 className="font-display text-sm font-semibold">Policy conflicts</h2>
               </div>
               <Button asChild size="sm" variant="ghost">
-                <Link to="/admin/audit">View all</Link>
+                <Link to="/admin/policy-conflicts">View all</Link>
               </Button>
             </div>
             <div className="p-2">
