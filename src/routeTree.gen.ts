@@ -19,6 +19,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RequestsIndexRouteImport } from './routes/requests.index'
 import { Route as RequestsRequestIdRouteImport } from './routes/requests.$requestId'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
+import { Route as StaffApprovalsRouteImport } from './routes/staff.approvals'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const StaffIndexRoute = StaffIndexRouteImport.update({
   path: '/staff/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffApprovalsRoute = StaffApprovalsRouteImport.update({
+  id: '/staff/approvals',
+  path: '/staff/approvals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
+  '/staff/approvals': typeof StaffApprovalsRoute
   '/requests/': typeof RequestsIndexRoute
   '/staff/': typeof StaffIndexRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
+  '/staff/approvals': typeof StaffApprovalsRoute
   '/requests': typeof RequestsIndexRoute
   '/staff': typeof StaffIndexRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/settings': typeof SettingsRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
+  '/staff/approvals': typeof StaffApprovalsRoute
   '/requests/': typeof RequestsIndexRoute
   '/staff/': typeof StaffIndexRoute
 }
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/settings'
     | '/requests/$requestId'
+    | '/staff/approvals'
     | '/requests/'
     | '/staff/'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/settings'
     | '/requests/$requestId'
+    | '/staff/approvals'
     | '/requests'
     | '/staff'
   id:
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/settings'
     | '/requests/$requestId'
+    | '/staff/approvals'
     | '/requests/'
     | '/staff/'
   fileRoutesById: FileRoutesById
@@ -156,6 +168,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   SettingsRoute: typeof SettingsRoute
   RequestsRequestIdRoute: typeof RequestsRequestIdRoute
+  StaffApprovalsRoute: typeof StaffApprovalsRoute
   RequestsIndexRoute: typeof RequestsIndexRoute
   StaffIndexRoute: typeof StaffIndexRoute
 }
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/approvals': {
+      id: '/staff/approvals'
+      path: '/staff/approvals'
+      fullPath: '/staff/approvals'
+      preLoaderRoute: typeof StaffApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -244,6 +264,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   SettingsRoute: SettingsRoute,
   RequestsRequestIdRoute: RequestsRequestIdRoute,
+  StaffApprovalsRoute: StaffApprovalsRoute,
   RequestsIndexRoute: RequestsIndexRoute,
   StaffIndexRoute: StaffIndexRoute,
 }
