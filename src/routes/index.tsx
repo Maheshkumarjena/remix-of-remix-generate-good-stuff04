@@ -91,10 +91,8 @@ function LoginPage() {
               Students, staff, wardens, lab in-charges and admins.
             </p>
             <p className="mt-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              Demo mode: if the backend is offline, sample campus data is served locally. Sign in
-              with any password using <span className="font-medium">student@campus.edu</span>,{" "}
-              <span className="font-medium">staff@campus.edu</span> or{" "}
-              <span className="font-medium">admin@campus.edu</span>.
+              This app requires a running backend at <span className="font-medium">{API_BASE_URL}</span>.
+              Use valid registered credentials to sign in.
             </p>
           </div>
 
