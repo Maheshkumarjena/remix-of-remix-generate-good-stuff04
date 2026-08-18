@@ -1,0 +1,232 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { AppShell, PageHeader } from "@/components/AppShell";
+import { EmptyState, ErrorBlock, LoadingBlock, StatusBadge, formatDate, listOf } from "@/components/common";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { api, qs } from "@/lib/api";
+import { useAuth, useRequireRole } from "@/lib/auth";
+import { useRealtime } from "@/lib/socket";
+import type { Grievance } from "@/lib/types";
+
+export const Route = createFileRoute("/grievances")({
+  head: () => ({
+    meta: [
+      { title: "Grievance Center · Campus Service Copilot" },
+      {
+        name: "description",
+        content: "File campus grievances anonymously or on record and track status and escalation level.",
+      },
+      { property: "og:title", content: "Grievance Center · Campus Service Copilot" },
+      { property: "og:description", content: "File and track campus grievances with escalation visibility." },
+    ],
+  }),
+  component: GrievancesPage,
+});
+
+const categories = ["hostel", "mess", "academics", "infrastructure", "harassment", "other"];
+const statusFilters = ["all", "open", "in_review", "escalated", "resolved", "rejected"];
+
+function GrievancesPage() {
+  const { user, loading } = useRequireRole();
+  const { user: authUser } = useAuth();
+  const queryClient = useQueryClient();
+  const [status, setStatus] = useState("all");
+  const [selected, setSelected] = useState<Grievance | null>(null);
+  const [form, setForm] = useState({
+    category: "hostel",
+    description: "",
+    is_anonymous: false,
+    evidence_urls: "",
+  });
+
+  const query = useQuery({
+    queryKey: ["grievances", status],
+    queryFn: () => api<unknown>(`/grievances${qs({ page: 1, status: status === "all" ? "" : status })}`),
+    enabled: Boolean(user),
+  });
+
+  useRealtime(authUser?.id, (event) => {
+    if (event.type === "grievance.escalated") {
+      toast.warning("A grievance was escalated");
+      void queryClient.invalidateQueries({ queryKey: ["grievances"] });
+    }
+  });
+
+  const create = useMutation({
+    mutationFn: () =>
+      api("/grievances", {
+        method: "POST",
+        body: {
+          category: form.category,
+          description: form.description,
+          is_anonymous: form.is_anonymous,
+          evidence_urls: form.evidence_urls
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Grievance filed");
+      setForm({ category: "hostel", description: "", is_anonymous: false, evidence_urls: "" });
+      void queryClient.invalidateQueries({ queryKey: ["grievances"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Could not file grievance"),
+  });
+
+  if (loading || !user) return null;
+  const grievances = listOf<Grievance>(query.data);
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="Grievance Center"
+        description="Anonymous filings hide your identity from staff, but stay auditable."
+        actions={
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {statusFilters.map((s) => (
+                <SelectItem key={s} value={s} className="capitalize">
+                  {s.replace(/_/g, " ")}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
+
+      <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="space-y-3">
+          {query.isLoading ? <LoadingBlock /> : null}
+          {query.error ? <ErrorBlock error={query.error} /> : null}
+          {!query.isLoading && grievances.length === 0 ? (
+            <EmptyState title="No grievances filed" hint="Use the form to raise your first grievance." />
+          ) : null}
+
+          {grievances.map((g) => (
+            <button
+              key={g.id}
+              onClick={() => setSelected(g)}
+              className="panel block w-full p-4 text-left transition-colors hover:bg-secondary/60"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-medium capitalize">{g.category}</span>
+                <div className="flex items-center gap-2">
+                  {g.is_anonymous ? <StatusBadge value="anonymous" /> : null}
+                  <StatusBadge value={g.status} />
+                  {g.escalation_level !== undefined ? (
+                    <StatusBadge value={`level ${g.escalation_level}`} />
+                  ) : null}
+                </div>
+              </div>
+              <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{g.description}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{formatDate(g.created_at)}</p>
+            </button>
+          ))}
+
+          {selected ? (
+            <div className="panel space-y-3 border-primary/40 p-5">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-sm font-semibold capitalize">{selected.category} detail</h2>
+                <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
+                  Close
+                </Button>
+              </div>
+              <p className="text-sm">{selected.description}</p>
+              <div className="flex flex-wrap gap-2">
+                <StatusBadge value={selected.status} />
+                <StatusBadge value={`escalation ${selected.escalation_level ?? 0}`} />
+              </div>
+              {selected.evidence_urls?.length ? (
+                <ul className="space-y-1 text-xs">
+                  {selected.evidence_urls.map((u) => (
+                    <li key={u}>
+                      <a href={u} target="_blank" rel="noreferrer" className="text-primary underline">
+                        {u}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <p className="text-xs text-muted-foreground">
+                Escalation is driven by SLA breach rules and staff review, not manual student action.
+              </p>
+            </div>
+          ) : null}
+        </section>
+
+        <aside className="panel h-fit space-y-4 p-5">
+          <h2 className="font-display text-sm font-semibold">File a grievance</h2>
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c} className="capitalize">
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="desc">Description</Label>
+            <Textarea
+              id="desc"
+              rows={5}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Describe the issue with dates and location."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="evidence">Evidence URLs</Label>
+            <Input
+              id="evidence"
+              value={form.evidence_urls}
+              onChange={(e) => setForm({ ...form, evidence_urls: e.target.value })}
+              placeholder="https://…, https://…"
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
+            <Label htmlFor="anon" className="text-sm font-normal">
+              File anonymously
+            </Label>
+            <Switch
+              id="anon"
+              checked={form.is_anonymous}
+              onCheckedChange={(v) => setForm({ ...form, is_anonymous: v })}
+            />
+          </div>
+          <Button
+            className="w-full"
+            disabled={form.description.trim().length < 10 || create.isPending}
+            onClick={() => create.mutate()}
+          >
+            Submit grievance
+          </Button>
+        </aside>
+      </div>
+    </AppShell>
+  );
+}

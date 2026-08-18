@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatRouteImport } from './routes/chat'
+import { Route as LabsRouteImport } from './routes/labs'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RequestsIndexRouteImport } from './routes/requests.index'
 import { Route as RequestsRequestIdRouteImport } from './routes/requests.$requestId'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabsRoute = LabsRouteImport.update({
+  id: '/labs',
+  path: '/labs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -44,6 +50,7 @@ const RequestsRequestIdRoute = RequestsRequestIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
+  '/labs': typeof LabsRoute
   '/register': typeof RegisterRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/requests/': typeof RequestsIndexRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
+  '/labs': typeof LabsRoute
   '/register': typeof RegisterRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/requests': typeof RequestsIndexRoute
@@ -59,19 +67,28 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
+  '/labs': typeof LabsRoute
   '/register': typeof RegisterRoute
   '/requests/$requestId': typeof RequestsRequestIdRoute
   '/requests/': typeof RequestsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chat' | '/register' | '/requests/$requestId' | '/requests/'
+  fullPaths:
+    | '/'
+    | '/chat'
+    | '/labs'
+    | '/register'
+    | '/requests/$requestId'
+    | '/requests/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chat' | '/register' | '/requests/$requestId' | '/requests'
+  to:
+    '/' | '/chat' | '/labs' | '/register' | '/requests/$requestId' | '/requests'
   id:
     | '__root__'
     | '/'
     | '/chat'
+    | '/labs'
     | '/register'
     | '/requests/$requestId'
     | '/requests/'
@@ -80,6 +97,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChatRoute: typeof ChatRoute
+  LabsRoute: typeof LabsRoute
   RegisterRoute: typeof RegisterRoute
   RequestsRequestIdRoute: typeof RequestsRequestIdRoute
   RequestsIndexRoute: typeof RequestsIndexRoute
@@ -99,6 +117,13 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/labs': {
+      id: '/labs'
+      path: '/labs'
+      fullPath: '/labs'
+      preLoaderRoute: typeof LabsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -128,6 +153,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChatRoute: ChatRoute,
+  LabsRoute: LabsRoute,
   RegisterRoute: RegisterRoute,
   RequestsRequestIdRoute: RequestsRequestIdRoute,
   RequestsIndexRoute: RequestsIndexRoute,
