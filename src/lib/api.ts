@@ -43,16 +43,50 @@ async function raw(path: string, options: Options = {}): Promise<Response> {
   });
 }
 
+/**
+ * Demo mode: when the backend cannot be reached we transparently serve the
+ * in-memory demo dataset so every screen stays explorable.
+ */
+let demoMode = false;
+const demoListeners = new Set<() => void>();
+
+export function isDemoMode() {
+  return demoMode;
+}
+export function onDemoModeChange(listener: () => void) {
+  demoListeners.add(listener);
+  return () => demoListeners.delete(listener);
+}
+function enableDemoMode() {
+  if (!demoMode) {
+    demoMode = true;
+    demoListeners.forEach((l) => l());
+  }
+}
+
+async function demo<T>(path: string, options: Options): Promise<T> {
+  const { mockRequest, MockNotFound } = await import("./mock-api");
+  try {
+    return await mockRequest<T>(
+      path,
+      (options.method as string | undefined) ?? "GET",
+      options.body as Record<string, unknown> | undefined,
+    );
+  } catch (err) {
+    if (err instanceof MockNotFound) throw new ApiError(err.message, 404, "DEMO_NOT_FOUND");
+    throw new ApiError(err instanceof Error ? err.message : "Demo request failed", 400);
+  }
+}
+
 export async function api<T = unknown>(path: string, options: Options = {}): Promise<T> {
+  if (demoMode) return demo<T>(path, options);
+
   let res: Response;
   try {
     res = await raw(path, options);
   } catch {
-    throw new ApiError(
-      `Cannot reach the Campus Copilot API at ${API_BASE_URL}. Is the backend running?`,
-      0,
-      "NETWORK_ERROR",
-    );
+    enableDemoMode();
+    return demo<T>(path, options);
   }
 
   if (res.status === 401 && !options.skipRefresh && !path.startsWith("/auth/")) {
@@ -73,6 +107,7 @@ export async function api<T = unknown>(path: string, options: Options = {}): Pro
 
   return data as T;
 }
+
 
 function safeJson(text: string): unknown {
   try {

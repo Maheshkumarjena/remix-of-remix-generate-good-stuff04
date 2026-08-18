@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { io, type Socket } from "socket.io-client";
 
-import { API_BASE_URL } from "./api";
+import { API_BASE_URL, isDemoMode } from "./api";
 
 export interface RealtimeEvent {
   type: string;
@@ -38,7 +38,9 @@ export function useRealtime(
 
   useEffect(() => {
     if (!userId || typeof window === "undefined") return;
+    if (isDemoMode()) return; // no realtime channel in demo mode
     const s = connect(userId, sessionId);
+
     const listener = (event: RealtimeEvent) => handlerRef.current(event);
     s.on("event", listener);
     return () => {
