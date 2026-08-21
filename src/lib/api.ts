@@ -10,6 +10,68 @@ export const API_BASE_URL =
 
 let accessToken: string | null = null;
 
+export interface PersonaHeaders {
+  userId?: string;
+  userRole?: string;
+  departmentId?: string;
+}
+
+let activePersona: PersonaHeaders | null = null;
+
+export function setPersonaHeaders(persona: PersonaHeaders | null) {
+  activePersona = persona;
+}
+export function getPersonaHeaders() {
+  return activePersona;
+}
+
+export const PRESET_PERSONAS = [
+  {
+    id: "student-paid",
+    name: "Aditi Sharma",
+    role: "student",
+    label: "Aditi Sharma (Student · 3rd Yr CSE · Fee Paid)",
+    headers: {
+      userId: "22222222-2222-4222-8222-222222222222",
+      userRole: "student",
+      departmentId: "aaaaaaaa-aaaa-4aaa-8aaa-111111111111",
+    },
+  },
+  {
+    id: "student-unpaid",
+    name: "Rohit Panda",
+    role: "student",
+    label: "Rohit Panda (Student · 2nd Yr ECE · Fee Unpaid)",
+    headers: {
+      userId: "44444444-4444-4444-8444-444444444444",
+      userRole: "student",
+      departmentId: "aaaaaaaa-aaaa-4aaa-8aaa-222222222222",
+    },
+  },
+  {
+    id: "staff-acad",
+    name: "Priya Das",
+    role: "staff",
+    label: "Priya Das (Academic Staff · Approver)",
+    headers: {
+      userId: "33333333-3333-4333-8333-333333333333",
+      userRole: "staff",
+      departmentId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    },
+  },
+  {
+    id: "faculty-lab",
+    name: "Dr. R. Nayak",
+    role: "lab_incharge",
+    label: "Dr. R. Nayak (Faculty · Lab In-Charge)",
+    headers: {
+      userId: "55555555-1111-4555-8555-111111111111",
+      userRole: "lab_incharge",
+      departmentId: "aaaaaaaa-aaaa-4aaa-8aaa-111111111111",
+    },
+  },
+];
+
 export function setAccessToken(token: string | null) {
   accessToken = token;
 }
@@ -37,6 +99,9 @@ async function raw(path: string, options: Options = {}): Promise<Response> {
     headers: {
       "Content-Type": "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(activePersona?.userId ? { "x-user-id": activePersona.userId } : {}),
+      ...(activePersona?.userRole ? { "x-user-role": activePersona.userRole } : {}),
+      ...(activePersona?.departmentId ? { "x-department-id": activePersona.departmentId } : {}),
       ...(headers as Record<string, string> | undefined),
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),

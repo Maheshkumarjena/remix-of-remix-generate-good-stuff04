@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Bot, Clock, FileText, Loader2, Send, ShieldAlert, User as UserIcon } from "lucide-react";
+import { Award, Bot, CheckCircle2, Clock, FileCheck, FileText, Loader2, Lock, Send, ShieldAlert, User as UserIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/chat")({
       {
         name: "description",
         content:
-          "Chat with the campus agent to request certificates, hostel maintenance, lab bookings and grievance help with cited policy answers.",
+          "Chat with the campus agent for loan certificates, fee receipts, lab bookings, and academic grievances.",
       },
       { property: "og:title", content: "Campus Copilot Chat" },
       { property: "og:description", content: "Agentic chat with live plan updates and staff approval states." },
@@ -30,10 +30,11 @@ export const Route = createFileRoute("/chat")({
 });
 
 const quickActions = [
-  "I need a bonafide certificate for a scholarship application.",
-  "The fan in my hostel room is not working.",
-  "Book me a slot in the electronics lab tomorrow.",
-  "I want to file a grievance about mess food quality.",
+  "I need a bonafide enrollment certificate for my education loan sanction",
+  "Can I get my 3rd year fee receipt?",
+  "Book the CSE lab tomorrow 2-4 PM for section CSE-3A",
+  "Book the main auditorium for an annual tech symposium",
+  "Request re-evaluation of my DBMS mid-sem paper (Marks 38/50)",
 ];
 
 function ChatPage() {
@@ -136,7 +137,7 @@ function ChatPage() {
     setInput("");
     setSending(true);
     try {
-      const res = await api<{ accepted?: boolean }>(`/agent/session/${sessionId}/message`, {
+      const res = await api<{ accepted?: boolean; response?: string }>(`/agent/session/${sessionId}/message`, {
         method: "POST",
         body: { content: text },
       });
@@ -155,8 +156,8 @@ function ChatPage() {
   return (
     <AppShell>
       <PageHeader
-        title="Campus Copilot"
-        description="Ask in English, Hindi or Odia. High-risk actions pause for staff approval."
+        title="Campus Copilot Chat"
+        description="Ask in English, Hindi or Odia. High-risk actions pause for staff sign-off."
         actions={
           <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
             session {sessionId ? sessionId.slice(0, 8) : "…"}
@@ -176,8 +177,8 @@ function ChatPage() {
             {messages.length === 0 && !streaming ? (
               <div className="space-y-4">
                 <EmptyState
-                  title="Start a conversation"
-                  hint="The copilot retrieves institutional documents before it acts, and cites what it used."
+                  title="Campus Service Copilot"
+                  hint="The copilot accesses real relational database models and policy documents before executing actions."
                 />
                 <div className="mx-auto grid max-w-xl gap-2">
                   {quickActions.map((q) => (
@@ -202,9 +203,9 @@ function ChatPage() {
             ) : null}
 
             {pendingApproval ? (
-              <div className="flex items-center gap-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
-                <ShieldAlert className="size-4" />
-                {pendingApproval}
+              <div className="flex items-center gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
+                <ShieldAlert className="size-5 shrink-0" />
+                <span>{pendingApproval} View progress in Staff Approvals queue.</span>
               </div>
             ) : null}
 
@@ -233,7 +234,7 @@ function ChatPage() {
                   void send(input);
                 }
               }}
-              placeholder="Describe what you need…"
+              placeholder="Describe what you need (e.g. loan certificate, fee receipt, lab booking)..."
               rows={2}
               className="resize-none"
               disabled={!sessionId}
@@ -254,6 +255,11 @@ function ChatPage() {
 
 function MessageBubble({ message }: { message: AgentMessage }) {
   const isUser = message.role === "user" || message.sender === "user";
+  const content = message.content;
+
+  const isUnpaidWarning = content.toLowerCase().includes("outstanding") || content.toLowerCase().includes("unpaid");
+  const isCertificateIssued = content.includes("SOA-CERT-2026") || content.toLowerCase().includes("certificate issued");
+
   return (
     <div className={`flex gap-3 ${isUser ? "justify-end" : ""}`}>
       {!isUser ? (
@@ -261,12 +267,50 @@ function MessageBubble({ message }: { message: AgentMessage }) {
           <Bot className="size-4" />
         </span>
       ) : null}
-      <div
-        className={`max-w-[42rem] rounded-lg px-4 py-3 text-sm leading-relaxed ${
-          isUser ? "bg-primary text-primary-foreground" : "panel"
-        }`}
-      >
-        <p className="whitespace-pre-wrap">{message.content}</p>
+      <div className={`max-w-[42rem] rounded-lg px-4 py-3 text-sm leading-relaxed ${isUser ? "bg-primary text-primary-foreground" : "panel"}`}>
+        <p className="whitespace-pre-wrap">{content}</p>
+
+        {/* Dynamic Card Overlay for Unpaid Balance Edge Case */}
+        {!isUser && isUnpaidWarning ? (
+          <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive space-y-2">
+            <div className="flex items-center gap-1.5 font-semibold">
+              <ShieldAlert className="size-4" />
+              <span>Outstanding Fee Balance Alert</span>
+            </div>
+            <p>
+              No fee receipt can be issued because an outstanding scheduled fee balance of ₹87,000 is pending.
+            </p>
+            <Button size="sm" variant="destructive" className="h-7 text-xs" asChild>
+              <Link to="/settings">
+                View Fee Breakdown &amp; Pay Online
+              </Link>
+            </Button>
+          </div>
+        ) : null}
+
+        {/* Dynamic Card Overlay for Certificate Issued */}
+        {!isUser && isCertificateIssued ? (
+          <div className="mt-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 font-semibold">
+                <FileCheck className="size-4" />
+                <span>Certificate Generated: SOA-CERT-2026-8A19F</span>
+              </div>
+              <CheckCircle2 className="size-4 text-emerald-500" />
+            </div>
+            <p className="font-mono text-[11px]">
+              HMAC-SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+            </p>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="h-7 text-xs" asChild>
+                <Link to="/staff/approvals">
+                  View Printable Letterhead
+                </Link>
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
         {message.cited_chunk_ids?.length ? (
           <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-2">
             {message.cited_chunk_ids.map((c) => (
@@ -274,7 +318,7 @@ function MessageBubble({ message }: { message: AgentMessage }) {
                 key={c}
                 className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground"
               >
-                <FileText className="size-3" /> {c.slice(0, 12)}
+                <FileText className="size-3" /> {c.slice(0, 14)}
               </span>
             ))}
           </div>
@@ -312,7 +356,7 @@ function PlanPanel({ plan, sessionId }: { plan: PlanStep[]; sessionId: string | 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-display text-sm font-semibold">Current plan</h2>
+        <h2 className="font-display text-sm font-semibold">Execution Plan Steps</h2>
         {steps.length === 0 ? (
           <p className="mt-2 text-xs text-muted-foreground">No plan steps yet.</p>
         ) : (

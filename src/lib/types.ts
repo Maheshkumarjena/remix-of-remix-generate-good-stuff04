@@ -282,3 +282,93 @@ export interface AuditVerifyResponse {
   intact: boolean;
   broken_at_entry_id?: string;
 }
+
+export interface StudentProfile {
+  registrationNo: string;
+  rollNo?: string;
+  name: string;
+  email?: string;
+  departmentName?: string;
+  departmentId?: string;
+  sectionName?: string;
+  batchLabel?: string;
+  year?: number;
+  semester?: number;
+  admissionYear?: number;
+  status?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+}
+
+export interface AnnualFeeSummary {
+  student?: {
+    registrationNo?: string;
+    name?: string;
+    departmentName?: string;
+  };
+  academicYear: number;
+  totalTuitionFee: number;
+  totalHostelFee: number;
+  totalExamFee: number;
+  totalAnnualScheduledFee: number;
+  totalAmountPaid: number;
+  outstandingBalance: number;
+  isFullyPaid: boolean;
+  paymentStatus: "paid" | "partial" | "unpaid" | string;
+  recentReceiptNo?: string | null;
+}
+
+export interface FeeStatusItem {
+  id: string;
+  amountPaid: number;
+  paymentStatus: string;
+  paymentDate?: string;
+  receiptNo?: string;
+  paymentMode?: string;
+  structure?: {
+    year?: number;
+    semester?: number;
+    tuitionFee?: number;
+    hostelFee?: number;
+    examFee?: number;
+    dueDate?: string;
+  };
+}
+
+export interface ExamRecord {
+  id: string;
+  subjectCode: string;
+  subjectName: string;
+  examType: "mid_sem" | "end_sem" | "supplementary" | string;
+  marksObtained: number;
+  maxMarks: number;
+  status: "published" | "pending" | "under_review" | string;
+  publishedAt?: string;
+}
+
+export interface SeminarHall {
+  id: string;
+  name: string;
+  departmentId?: string | null;
+  capacity: number;
+  hasProjector: boolean;
+  hasAc: boolean;
+  location?: string;
+}
+
+export interface SeminarHallBooking {
+  id: string;
+  hallId: string;
+  purpose: string;
+  startTime: string;
+  endTime: string;
+  status: "confirmed" | "pending_approval" | "cancelled" | string;
+  approvalRequired: boolean;
+  hall?: {
+    name?: string;
+    capacity?: number;
+    location?: string;
+  };
+  bookedByUserId?: string;
+}
+
