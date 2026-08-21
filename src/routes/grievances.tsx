@@ -277,7 +277,11 @@ function GrievancesPage() {
                 ) : (
                   <StatusBadge value={`Escalation Level ${selected.escalation_level ?? 1}`} />
                 )}
-                {(selected.anonymous ?? selected.is_anonymous) ? <StatusBadge value="anonymous" /> : null}
+                {(selected.anonymous ?? selected.is_anonymous) ? (
+                  <span className="inline-flex items-center gap-1 rounded bg-slate-500/10 px-2 py-0.5 font-medium text-xs text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                    🔒 Student Identity Anonymous (Protected)
+                  </span>
+                ) : null}
               </div>
 
               {selected.escalation_history?.length ? (
@@ -316,7 +320,9 @@ function GrievancesPage() {
 
         {/* Grievance Submission Form */}
         <aside className="panel h-fit space-y-4 p-5">
-          <h2 className="font-display text-sm font-semibold">File a Grievance / Re-Evaluation</h2>
+          <h2 className="font-display text-sm font-semibold">
+            {user.role === "student" ? "File a Grievance / Re-Evaluation" : "Submit Operational Issue / Escalation"}
+          </h2>
 
           <div className="space-y-2">
             <Label>Category</Label>

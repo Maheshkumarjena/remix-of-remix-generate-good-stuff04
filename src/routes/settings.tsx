@@ -282,6 +282,28 @@ function SettingsPage() {
           </div>
         ) : null}
 
+        {/* Staff / Admin Institutional Identity Card */}
+        {!isStudent ? (
+          <div className="panel space-y-4 p-5 border-primary/30 bg-card">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2 font-display text-sm font-semibold">
+                <GraduationCap className="size-5 text-primary" />
+                <span>Staff &amp; Governance Official Identity</span>
+              </div>
+              <StatusBadge value={user.role} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-3">
+              <Row label="Staff Name" value={user.name} />
+              <Row label="Email Address" value={user.email} />
+              <Row label="Assigned Role" value={user.role.replace("_", " ")} />
+              <Row label="Department Scope" value={user.department ?? user.department_id ?? "Academic Administration"} />
+              <Row label="Approval Clearance" value={user.role === "admin" ? "Level 3 (Global Admin)" : "Level 2 (HITL Reviewer)"} />
+              <Row label="Account Status" value="Active & Authorized" />
+            </div>
+          </div>
+        ) : null}
+
         {/* Basic User Account Card */}
         <div className="panel space-y-3 p-5 text-sm">
           <h2 className="font-display text-sm font-semibold">Account Information</h2>

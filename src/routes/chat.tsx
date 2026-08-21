@@ -33,13 +33,33 @@ export const Route = createFileRoute("/chat")({
   component: ChatPage,
 });
 
-const quickActions = [
+const studentQuickActions = [
   "I need a bonafide enrollment certificate for my education loan sanction",
   "Can I get my 3rd year fee receipt?",
   "Book the CSE lab tomorrow 2-4 PM for section CSE-3A",
   "Book the main auditorium for an annual tech symposium",
   "Request re-evaluation of my DBMS mid-sem paper (Marks 38/50)",
 ];
+
+const staffQuickActions = [
+  "Check pending high-risk approvals for my department",
+  "Show lab booking slot conflicts for tomorrow in CSE Lab",
+  "Summarize open grievances for hostel block B",
+  "Search academic policy regarding certificate eligibility and attendance rules",
+];
+
+const adminQuickActions = [
+  "Run SHA-256 hash-chain integrity check on recent audit logs",
+  "Show overall department SLA compliance rate and bottlenecks",
+  "Identify policy conflicts between academic regulations 2024 and 2026",
+  "Summarize campus-wide service request volume and peak load",
+];
+
+function getQuickActionsForRole(role?: string) {
+  if (role === "admin") return adminQuickActions;
+  if (role === "staff" || role === "warden" || role === "lab_incharge") return staffQuickActions;
+  return studentQuickActions;
+}
 
 function ChatPage() {
   const { session: targetSessionId } = Route.useSearch();
@@ -224,21 +244,64 @@ function ChatPage() {
 
   if (loading || !user) return null;
 
+  const currentRole = user.role;
+  const quickActions = getQuickActionsForRole(currentRole);
+
+  const pageTitle =
+    currentRole === "admin"
+      ? "Executive Governance Copilot"
+      : currentRole === "staff" || currentRole === "warden" || currentRole === "lab_incharge"
+        ? "Staff Copilot Assistant"
+        : "Campus Copilot Chat";
+
+  const pageDescription =
+    currentRole === "admin"
+      ? "Policy conflict analysis, audit integrity verification, and systemic SLA analytics queries."
+      : currentRole === "staff" || currentRole === "warden" || currentRole === "lab_incharge"
+        ? "Query departmental workflow steps, search institutional policies, and review student evidence."
+        : "Ask in English, Hindi or Odia. High-risk actions pause for staff sign-off.";
+
   return (
     <AppShell>
       <PageHeader
-        title="Campus Copilot Chat"
-        description="Ask in English, Hindi or Odia. High-risk actions pause for staff sign-off."
+        title={pageTitle}
+        description={pageDescription}
         actions={
-          <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
-            session {sessionId ? sessionId.slice(0, 8) : "…"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold capitalize text-primary">
+              {currentRole.replace(/_/g, " ")} Persona
+            </span>
+            <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
+              session {sessionId ? sessionId.slice(0, 8) : "…"}
+            </span>
+          </div>
         }
       />
 
       <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="flex h-[calc(100vh-5.5rem)] flex-col">
           <div className="flex-1 space-y-4 overflow-y-auto p-6">
+            {/* Role Persona Context Banner */}
+            {currentRole === "admin" ? (
+              <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-xs text-foreground">
+                <span className="flex items-center gap-2 font-medium">
+                  <Lock className="size-3.5 text-primary" /> Admin Mode: Full Cryptographic Audit Ledger &amp; Policy Control Active
+                </span>
+                <Button size="sm" variant="outline" className="h-7 text-xs" asChild>
+                  <Link to="/admin/audit">Audit Explorer</Link>
+                </Button>
+              </div>
+            ) : currentRole === "staff" || currentRole === "warden" || currentRole === "lab_incharge" ? (
+              <div className="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-xs text-emerald-800 dark:text-emerald-300">
+                <span className="flex items-center gap-2 font-medium">
+                  <FileCheck className="size-3.5 text-emerald-500" /> Staff Mode: Connected to Department Approvals &amp; Policy RAG Engine
+                </span>
+                <Button size="sm" variant="outline" className="h-7 text-xs border-emerald-500/40" asChild>
+                  <Link to="/staff/approvals">Approvals Queue</Link>
+                </Button>
+              </div>
+            ) : null}
+
             {connectionError ? (
               <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
                 {connectionError}
@@ -248,10 +311,19 @@ function ChatPage() {
             {messages.length === 0 && !streaming ? (
               <div className="space-y-4">
                 <EmptyState
-                  title="Campus Service Copilot"
-                  hint="The copilot accesses real relational database models and policy documents before executing actions."
+                  title={pageTitle}
+                  hint={
+                    currentRole === "admin"
+                      ? "Search policies, run audit verifications, or query SLA bottlenecks across departments."
+                      : currentRole === "staff" || currentRole === "warden" || currentRole === "lab_incharge"
+                        ? "Search academic regulations, check lab slot conflicts, or query pending approval evidence."
+                        : "The copilot accesses real relational database models and policy documents before executing actions."
+                  }
                 />
                 <div className="mx-auto grid max-w-xl gap-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                    Suggested {currentRole.replace(/_/g, " ")} Queries:
+                  </p>
                   {quickActions.map((q) => (
                     <button
                       key={q}
@@ -310,7 +382,13 @@ function ChatPage() {
                   void send(input);
                 }
               }}
-              placeholder="Describe what you need (e.g. loan certificate, fee receipt, lab booking)..."
+              placeholder={
+                currentRole === "admin"
+                  ? "Ask admin query (e.g. check audit hash chain, policy conflicts, SLA performance)..."
+                  : currentRole === "staff" || currentRole === "warden" || currentRole === "lab_incharge"
+                    ? "Ask staff query (e.g. check pending approvals, lab slot conflict, attendance policy)..."
+                    : "Describe what you need (e.g. loan certificate, fee receipt, lab booking)..."
+              }
               rows={2}
               className="resize-none"
               disabled={!sessionId}
@@ -322,7 +400,7 @@ function ChatPage() {
         </section>
 
         <aside className="hidden h-[calc(100vh-5.5rem)] overflow-y-auto border-l border-border bg-card/60 p-5 lg:block">
-          <PlanPanel plan={plan} sessionId={sessionId} />
+          <PlanPanel plan={plan} sessionId={sessionId} role={currentRole} />
         </aside>
       </div>
     </AppShell>
@@ -409,7 +487,7 @@ function MessageBubble({ message }: { message: AgentMessage }) {
   );
 }
 
-function PlanPanel({ plan, sessionId }: { plan: PlanStep[]; sessionId: string | null }) {
+function PlanPanel({ plan, sessionId, role }: { plan: PlanStep[]; sessionId: string | null; role?: string }) {
   const { data: fetchedPlan } = useQuery({
     queryKey: ["plan", sessionId],
     queryFn: () => api<unknown>(`/agent/session/${sessionId}/plan`),
@@ -422,12 +500,26 @@ function PlanPanel({ plan, sessionId }: { plan: PlanStep[]; sessionId: string | 
     queryFn: () => api<unknown>("/requests?page=1&limit=5"),
   });
 
+  const { data: approvals } = useQuery({
+    queryKey: ["approvals", "chat-sidebar"],
+    queryFn: () => api<unknown>("/approvals"),
+    enabled: role === "staff" || role === "warden" || role === "lab_incharge" || role === "admin",
+  });
+
+  const { data: conflicts } = useQuery({
+    queryKey: ["policy-conflicts", "chat-sidebar"],
+    queryFn: () => api<unknown>("/admin/analytics/policy-conflicts?page=1&limit=5"),
+    enabled: role === "admin",
+  });
+
   const { data: notifications } = useQuery({
     queryKey: ["notifications", "unread"],
     queryFn: () => api<unknown>("/notifications?unread_only=true"),
   });
 
   const steps = plan.length ? plan : listOf<PlanStep>((fetchedPlan as { steps?: PlanStep[] })?.steps ?? fetchedPlan);
+  const approvalList = listOf<Approval>(approvals);
+  const conflictList = listOf<PolicyConflict>(conflicts);
 
   return (
     <div className="space-y-6">
@@ -467,6 +559,58 @@ function PlanPanel({ plan, sessionId }: { plan: PlanStep[]; sessionId: string | 
           </ol>
         )}
       </div>
+
+      {/* Staff Approvals Queue Widget */}
+      {role === "staff" || role === "warden" || role === "lab_incharge" ? (
+        <div>
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-sm font-semibold">Pending Staff Approvals</h2>
+            <Button size="sm" variant="ghost" className="h-6 text-xs px-2 text-primary" asChild>
+              <Link to="/staff/approvals">View Queue</Link>
+            </Button>
+          </div>
+          <ul className="mt-3 space-y-2">
+            {approvalList.slice(0, 4).map((a) => {
+              const toolName = a.workflowStep?.toolName ?? a.workflowStep?.tool_name ?? a.tool_name ?? "High Risk Action";
+              return (
+                <li key={a.id} className="panel p-3 text-xs space-y-1 border-amber-500/20 bg-amber-500/5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground">{toolName}</span>
+                    <StatusBadge value={a.risk_level ?? "high"} />
+                  </div>
+                  <p className="text-muted-foreground truncate">{a.requester_name ?? "Student"} · {a.original_request ?? "Request"}</p>
+                </li>
+              );
+            })}
+            {approvalList.length === 0 ? (
+              <li className="text-xs text-muted-foreground">No pending staff approvals.</li>
+            ) : null}
+          </ul>
+        </div>
+      ) : null}
+
+      {/* Admin Policy Conflicts Widget */}
+      {role === "admin" ? (
+        <div>
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-sm font-semibold font-mono">Policy Contradictions</h2>
+            <Button size="sm" variant="ghost" className="h-6 text-xs px-2 text-primary" asChild>
+              <Link to="/admin/policy-conflicts">View All</Link>
+            </Button>
+          </div>
+          <ul className="mt-3 space-y-2">
+            {conflictList.slice(0, 3).map((c) => (
+              <li key={c.id} className="panel p-3 text-xs space-y-1">
+                <p className="font-medium text-foreground truncate">{c.summary ?? `Conflict #${c.id.slice(0, 8)}`}</p>
+                <StatusBadge value={c.status ?? "detected"} />
+              </li>
+            ))}
+            {conflictList.length === 0 ? (
+              <li className="text-xs text-muted-foreground">No active policy conflicts detected.</li>
+            ) : null}
+          </ul>
+        </div>
+      ) : null}
 
       <div>
         <h2 className="font-display text-sm font-semibold">Active requests</h2>

@@ -43,6 +43,7 @@ const studentNav: NavItem[] = [
 const staffNav: NavItem[] = [
   { to: "/staff", label: "Dashboard", icon: <LayoutDashboard className="size-4" /> },
   { to: "/staff/approvals", label: "Approvals Queue", icon: <ShieldCheck className="size-4" /> },
+  { to: "/chat", label: "Copilot Assistant", icon: <MessageSquare className="size-4" /> },
   { to: "/staff/requests", label: "Requests", icon: <ClipboardList className="size-4" /> },
   { to: "/staff/kb", label: "Knowledge Base", icon: <Library className="size-4" /> },
   { to: "/labs", label: "Lab & Hall Booking", icon: <FlaskConical className="size-4" /> },
@@ -52,6 +53,7 @@ const staffNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { to: "/admin", label: "Governance Overview", icon: <LayoutDashboard className="size-4" /> },
+  { to: "/chat", label: "Executive Copilot", icon: <MessageSquare className="size-4" /> },
   { to: "/admin/audit", label: "Audit Explorer", icon: <FileSearch className="size-4" /> },
   { to: "/admin/policy-conflicts", label: "Policy Conflicts", icon: <ScrollText className="size-4" /> },
   { to: "/admin/kb", label: "Knowledge Base", icon: <Library className="size-4" /> },

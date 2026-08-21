@@ -255,15 +255,16 @@ function LabsPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <StatusBadge value={b.status ?? "confirmed"} />
-                          {bookingUserId === user.id ? (
+                          {bookingUserId === user.id || user.role === "staff" || user.role === "lab_incharge" || user.role === "admin" ? (
                             <Button
                               variant="ghost"
                               size="icon"
                               disabled={cancel.isPending}
                               onClick={() => cancel.mutate(b.id)}
                               aria-label="Cancel booking"
+                              title={bookingUserId !== user.id ? "Staff Override: Cancel slot" : "Cancel booking"}
                             >
-                              <Trash2 className="size-4" />
+                              <Trash2 className="size-4 text-destructive/80 hover:text-destructive" />
                             </Button>
                           ) : null}
                         </div>
