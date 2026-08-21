@@ -28,7 +28,7 @@ export const Route = createFileRoute("/staff/approvals")({
   component: ApprovalQueue,
 });
 
-export function ApprovalQueue() {
+function ApprovalQueue() {
   const { user, loading } = useRequireRole(["staff", "warden", "lab_incharge", "admin"]);
   const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
@@ -36,6 +36,7 @@ export function ApprovalQueue() {
   const [reason, setReason] = useState("");
   const [question, setQuestion] = useState("");
   const [showCertificatePreview, setShowCertificatePreview] = useState(false);
+  const [dismissedMockIds, setDismissedMockIds] = useState<string[]>([]);
 
   const query = useQuery({
     queryKey: ["approvals"],
@@ -48,10 +49,44 @@ export function ApprovalQueue() {
       void queryClient.invalidateQueries({ queryKey: ["approvals"] });
   });
 
+  const decide = useMutation({
+    mutationFn: async (input: { id: string; action: "approve" | "reject" | "request-info"; body?: unknown }) => {
+      if (input.id.startsWith("appr_")) {
+        await new Promise((r) => setTimeout(r, 600));
+        return { success: true, status: input.action === "approve" ? "approved" : "rejected" };
+      }
+      return api(`/approvals/${input.id}/${input.action}`, { method: "POST", body: input.body ?? {} });
+    },
+    onSuccess: (_data, variables) => {
+      toast.success(
+        variables.action === "approve"
+          ? "Approved — Certificate SOA-CERT-2026-8A19F signed and issued to student!"
+          : variables.action === "reject"
+            ? "Rejected step"
+            : "Question sent back to the student session",
+      );
+      setReason("");
+      setQuestion("");
+      if (variables.id.startsWith("appr_")) {
+        if (variables.action === "approve") {
+          localStorage.setItem("mock_bonafide_status", "completed");
+        } else if (variables.action === "reject") {
+          localStorage.setItem("mock_bonafide_status", "rejected");
+        }
+        setDismissedMockIds((prev) => [...prev, variables.id]);
+      }
+      void queryClient.invalidateQueries({ queryKey: ["approvals"] });
+      void queryClient.invalidateQueries({ queryKey: ["requests"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Decision failed"),
+  });
+
+  if (loading || !user) return null;
+
   const rawApprovals = listOf<Approval>(query.data);
 
-  // Fallback sample item for Education Loan HITL sign-off if database has no active pending approvals
-  const mockApprovalItem: Approval = {
+  // Persona-appropriate fallback sample item if database has no active pending approvals
+  const mockLoanApprovalItem: Approval = {
     id: "appr_loan_909",
     workflowStepId: "step_701",
     status: "awaiting_approval",
@@ -88,34 +123,59 @@ export function ApprovalQueue() {
     ],
   };
 
-  const approvals = rawApprovals.length > 0 ? rawApprovals : [mockApprovalItem];
+  const mockHostelApprovalItem: Approval = {
+    id: "appr_hostel_101",
+    workflowStepId: "step_802",
+    status: "awaiting_approval",
+    risk_level: "high",
+    tool_name: "escalate_grievance",
+    requester_name: "Rohit Panda",
+    original_request: "Water leakage and broken plumbing in Hostel Block B, Room 214",
+    session_id: "sess-hostel-99",
+    reasoning: "High-level hostel maintenance complaint requires Warden authorization before escalating work order to Civil Works Dept.",
+    created_at: new Date().toISOString(),
+    contextJson: {
+      student_name: "Rohit Panda",
+      registration_no: "22ECE1099",
+      hostel_block: "Block B",
+      room_no: "214",
+      category: "hostel_maintenance",
+      description: "Severe water leakage in bathroom ceiling causing flooding",
+      urgency: "high",
+    },
+  };
+
+  const mockLabApprovalItem: Approval = {
+    id: "appr_lab_202",
+    workflowStepId: "step_903",
+    status: "awaiting_approval",
+    risk_level: "high",
+    tool_name: "book_seminar_hall",
+    requester_name: "Dr. R. Nayak",
+    original_request: "Reserve Main Auditorium for 400 students - National Robotics Workshop",
+    session_id: "sess-lab-88",
+    reasoning: "Auditorium capacity >= 200 requires Lab & Facilities In-Charge approval for equipment check.",
+    created_at: new Date().toISOString(),
+    contextJson: {
+      faculty_name: "Dr. R. Nayak",
+      hall_name: "Main Auditorium",
+      capacity: 400,
+      purpose: "National Robotics Workshop",
+      date: new Date().toISOString().slice(0, 10),
+      duration: "09:00 - 13:00",
+    },
+  };
+
+  const userRole = user.role;
+  const defaultMock = userRole === "warden" 
+    ? mockHostelApprovalItem 
+    : userRole === "lab_incharge" 
+      ? mockLabApprovalItem 
+      : mockLoanApprovalItem;
+
+  const activeMocks = [defaultMock].filter((m) => !dismissedMockIds.includes(m.id));
+  const approvals = rawApprovals.length > 0 ? rawApprovals : activeMocks;
   const selected = approvals.find((a) => a.id === selectedId) ?? approvals[0] ?? null;
-
-  const decide = useMutation({
-    mutationFn: async (input: { id: string; action: "approve" | "reject" | "request-info"; body?: unknown }) => {
-      if (input.id === "appr_loan_909") {
-        // Simulate mock delay for sample item
-        await new Promise((r) => setTimeout(r, 600));
-        return { success: true, status: input.action === "approve" ? "approved" : "rejected" };
-      }
-      return api(`/approvals/${input.id}/${input.action}`, { method: "POST", body: input.body ?? {} });
-    },
-    onSuccess: (_data, variables) => {
-      toast.success(
-        variables.action === "approve"
-          ? "Approved — Certificate SOA-CERT-2026-8A19F signed and issued to student!"
-          : variables.action === "reject"
-            ? "Rejected step"
-            : "Question sent back to the student session",
-      );
-      setReason("");
-      setQuestion("");
-      void queryClient.invalidateQueries({ queryKey: ["approvals"] });
-    },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "Decision failed"),
-  });
-
-  if (loading || !user) return null;
 
   const contextData = (selected?.contextJson ?? selected?.tool_args ?? {}) as Record<string, unknown>;
 
@@ -129,39 +189,44 @@ export function ApprovalQueue() {
       {query.isLoading ? <LoadingBlock /> : null}
       {query.error ? <ErrorBlock error={query.error} /> : null}
 
-      <div className="grid gap-6 p-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-        {/* Approvals List Sidebar */}
-        <ul className="space-y-2">
-          {approvals.map((a) => {
-            const toolName = a.workflowStep?.toolName ?? a.workflowStep?.tool_name ?? a.tool_name ?? a.workflowStep?.stepName ?? "Agent action";
-            const riskLevel = a.workflowStep?.riskLevel ?? a.workflowStep?.risk_level ?? a.risk_level ?? "high";
-            const status = a.decision ?? a.workflowStep?.status ?? a.status ?? "awaiting_approval";
-            const createdAt = a.createdAt ?? a.created_at;
+      {approvals.length === 0 ? (
+        <div className="p-6">
+          <EmptyState title="No pending approvals" hint="All high-risk agent steps have been reviewed and signed off." />
+        </div>
+      ) : (
+        <div className="grid gap-6 p-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+          {/* Approvals List Sidebar */}
+          <ul className="space-y-2">
+            {approvals.map((a) => {
+              const toolName = a.workflowStep?.toolName ?? a.workflowStep?.tool_name ?? a.tool_name ?? a.workflowStep?.stepName ?? "Agent action";
+              const riskLevel = a.workflowStep?.riskLevel ?? a.workflowStep?.risk_level ?? a.risk_level ?? "high";
+              const status = a.decision ?? a.workflowStep?.status ?? a.status ?? "awaiting_approval";
+              const createdAt = a.createdAt ?? a.created_at;
 
-            return (
-              <li key={a.id}>
-                <button
-                  onClick={() => setSelectedId(a.id)}
-                  className={`panel w-full p-3 text-left transition-colors hover:bg-secondary/60 ${
-                    selected?.id === a.id ? "border-primary/50 bg-secondary/50" : ""
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="truncate text-sm font-medium">{toolName}</p>
-                    <StatusBadge value={riskLevel} />
-                  </div>
-                  <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                    {a.requester_name ?? "Student"} · {a.original_request ?? "Request"}
-                  </p>
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span>{formatDate(createdAt)}</span>
-                    <StatusBadge value={status} />
-                  </div>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+              return (
+                <li key={a.id}>
+                  <button
+                    onClick={() => setSelectedId(a.id)}
+                    className={`panel w-full p-3 text-left transition-colors hover:bg-secondary/60 ${
+                      selected?.id === a.id ? "border-primary/50 bg-secondary/50" : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="truncate text-sm font-medium">{toolName}</p>
+                      <StatusBadge value={riskLevel} />
+                    </div>
+                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                      {a.requester_name ?? "Student"} · {a.original_request ?? "Request"}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span>{formatDate(createdAt)}</span>
+                      <StatusBadge value={status} />
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
 
         {/* Selected Approval Detail View */}
         {selected ? (
@@ -351,6 +416,7 @@ export function ApprovalQueue() {
           </div>
         ) : null}
       </div>
+      )}
     </AppShell>
   );
 }

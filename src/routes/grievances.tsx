@@ -148,7 +148,7 @@ function GrievancesPage() {
   if (loading || !user) return null;
 
   // Sample grievance item for demo
-  const sampleGrievance: Grievance = {
+  const sampleAcademicGrievance: Grievance = {
     id: "griev-1",
     category: "academic_evaluation",
     description: "Requesting re-evaluation of DBMS mid-sem paper (CS301). Marks awarded 38/50. Discrepancy identified in Q3 relational algebra query evaluation.",
@@ -171,6 +171,26 @@ function GrievancesPage() {
       },
     ],
   };
+
+  const sampleHostelGrievance: Grievance = {
+    id: "griev-2",
+    category: "hostel_maintenance",
+    description: "Severe water leakage and broken plumbing in Hostel Block B, Room 214.",
+    status: "open",
+    anonymous: false,
+    escalation_level: 1,
+    created_at: new Date().toISOString(),
+    escalation_history: [
+      {
+        level: 1,
+        escalated_at: new Date().toISOString(),
+        escalated_by: "Hostel Warden",
+        reason: "Logged by student for hostel maintenance review",
+      },
+    ],
+  };
+
+  const sampleGrievance = user.role === "warden" ? sampleHostelGrievance : sampleAcademicGrievance;
 
   const rawGrievances = listOf<Grievance>(query.data);
   const grievances = rawGrievances.length > 0 ? rawGrievances : [sampleGrievance];

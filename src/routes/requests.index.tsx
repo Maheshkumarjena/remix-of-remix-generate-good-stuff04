@@ -20,6 +20,7 @@ import { api, qs } from "@/lib/api";
 import { useAuth, useRequireRole } from "@/lib/auth";
 import { useRealtime } from "@/lib/socket";
 import type { ServiceRequest } from "@/lib/types";
+import { CAMPUS_DEPARTMENTS } from "@/lib/departments";
 
 export const Route = createFileRoute("/requests/")({
   head: () => ({
@@ -78,7 +79,23 @@ function RequestsPage() {
   });
 
   if (loading || !user) return null;
-  const requests = listOf<ServiceRequest>(query.data);
+  const rawRequests = listOf<ServiceRequest>(query.data);
+
+  const mockStatus = (typeof window !== "undefined" ? localStorage.getItem("mock_bonafide_status") : null) ?? "completed";
+
+  // Sample fallback request item for demo when database has no requests yet
+  const sampleCertificateRequest: ServiceRequest = {
+    id: "c976dd8d-8a19-4f22-9011-222222222222",
+    request_type: "certificate",
+    status: mockStatus,
+    description: "I need a bonafide enrollment certificate for my education loan sanction",
+    created_at: new Date().toISOString(),
+    sla_due_at: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
+    department_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    session_id: "sess-8a19f-2026",
+  };
+
+  const requests = rawRequests.length > 0 ? rawRequests : [sampleCertificateRequest];
 
   return (
     <AppShell>
@@ -169,13 +186,23 @@ function RequestsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="request-department">Department ID (optional)</Label>
-              <Input
-                id="request-department"
+              <Label>Target Department / Branch</Label>
+              <Select
                 value={form.department_id}
-                onChange={(e) => setForm((prev) => ({ ...prev, department_id: e.target.value }))}
-                placeholder="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
-              />
+                onValueChange={(value) => setForm((prev) => ({ ...prev, department_id: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select target department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default_dept">Automatic (Based on User Branch)</SelectItem>
+                  {CAMPUS_DEPARTMENTS.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name} ({d.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <Button
               className="w-full"

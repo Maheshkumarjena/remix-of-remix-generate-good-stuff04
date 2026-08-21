@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell, PageHeader } from "@/components/AppShell";
+import { AgentTaskProgress, type ProgressLogItem } from "@/components/AgentTaskProgress";
 import { EmptyState, StatusBadge, listOf } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,9 @@ import { useRealtime, type RealtimeEvent } from "@/lib/socket";
 import type { AgentMessage, Notification, PlanStep, ServiceRequest } from "@/lib/types";
 
 export const Route = createFileRoute("/chat")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    session: typeof search.session === "string" ? search.session : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Campus Copilot Chat" },
@@ -38,6 +42,7 @@ const quickActions = [
 ];
 
 function ChatPage() {
+  const { session: targetSessionId } = Route.useSearch();
   const { user, loading } = useRequireRole(["student", "staff", "warden", "lab_incharge", "admin"]);
   const { user: authUser } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -48,6 +53,18 @@ function ChatPage() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [taskProgress, setTaskProgress] = useState<{
+    activeStage: string;
+    stageMessage: string;
+    progressPercent: number;
+    currentTool?: string;
+    logs: ProgressLogItem[];
+  }>({
+    activeStage: "detect_language",
+    stageMessage: "Agent initialized",
+    progressPercent: 5,
+    logs: [],
+  });
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,11 +72,14 @@ function ChatPage() {
     let active = true;
     (async () => {
       try {
-        const session = await api<{ id?: string; session_id?: string }>("/agent/session", {
-          method: "POST",
-          body: { language: user.preferred_language ?? "en" },
-        });
-        const id = session.id ?? session.session_id ?? null;
+        let id = targetSessionId ?? null;
+        if (!id) {
+          const session = await api<{ id?: string; session_id?: string }>("/agent/session", {
+            method: "POST",
+            body: { language: user.preferred_language ?? "en" },
+          });
+          id = session.id ?? session.session_id ?? null;
+        }
         if (!active) return;
         setSessionId(id);
         if (id) {
@@ -79,7 +99,7 @@ function ChatPage() {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [user, targetSessionId]);
 
   useRealtime(
     authUser?.id,
@@ -109,10 +129,47 @@ function ChatPage() {
         case "plan.update":
           setPlan((event["steps"] as PlanStep[] | undefined) ?? []);
           break;
+        case "agent.progress": {
+          const stage = String(event["stage"] ?? "processing");
+          const message = String(event["message"] ?? "Agent is performing task...");
+          const progressPercent = Number(event["progress_percent"] ?? 20);
+          const toolName = event["tool_name"] ? String(event["tool_name"]) : undefined;
+          const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+          setTaskProgress((prev) => {
+            const newLog: ProgressLogItem = {
+              id: crypto.randomUUID(),
+              stage,
+              message,
+              timestamp: timeStr,
+              status: event["status"] === "done" ? "done" : "running",
+              toolName,
+            };
+            return {
+              activeStage: stage,
+              stageMessage: message,
+              progressPercent,
+              currentTool: toolName,
+              logs: [...prev.logs, newLog],
+            };
+          });
+          break;
+        }
         case "approval.created":
           setPendingApproval("Waiting for staff approval on a high-risk step.");
           break;
-        case "approval.status":
+        case "approval.status": {
+          const status = String(event["status"] ?? "");
+          if (status === "info_requested") {
+            const q = String(event["question"] ?? "Staff requested additional information.");
+            setPendingApproval(`Staff Clarification Needed: "${q}"`);
+            toast.info(`Staff requested info: ${q}`);
+          } else {
+            setPendingApproval(null);
+            toast.info(`Approval ${status}`);
+          }
+          break;
+        }
         case "approval.actioned":
           setPendingApproval(null);
           toast.info(`Approval ${String(event["status"] ?? "updated")}`);
@@ -136,6 +193,20 @@ function ChatPage() {
     setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "user", content: text }]);
     setInput("");
     setSending(true);
+    setTaskProgress({
+      activeStage: "detect_language",
+      stageMessage: "Starting agent execution pipeline...",
+      progressPercent: 10,
+      logs: [
+        {
+          id: crypto.randomUUID(),
+          stage: "start",
+          message: "Request received by Campus Copilot",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          status: "done",
+        },
+      ],
+    });
     try {
       const res = await api<{ accepted?: boolean; response?: string }>(`/agent/session/${sessionId}/message`, {
         method: "POST",
@@ -210,9 +281,14 @@ function ChatPage() {
             ) : null}
 
             {sending && !streaming ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" /> Copilot is thinking…
-              </div>
+              <AgentTaskProgress
+                activeStage={taskProgress.activeStage}
+                stageMessage={taskProgress.stageMessage}
+                progressPercent={taskProgress.progressPercent}
+                logs={taskProgress.logs}
+                currentTool={taskProgress.currentTool}
+                isPausedForApproval={Boolean(pendingApproval)}
+              />
             ) : null}
 
             <div ref={bottomRef} />
@@ -365,20 +441,25 @@ function PlanPanel({ plan, sessionId }: { plan: PlanStep[]; sessionId: string | 
               const stepName = step.step_name ?? step.title ?? step.tool_name ?? step.tool ?? `Step ${i + 1}`;
               const rationale = step.rationale ?? step.description;
               const risk = step.risk_level ?? step.riskLevel;
+              const isExecuting = step.status === "in_progress" || step.status === "running";
 
               return (
-                <li key={step.id ?? i} className="panel p-3">
+                <li
+                  key={step.id ?? i}
+                  className={`panel p-3 transition-all ${
+                    isExecuting ? "border-primary/50 bg-primary/5 ring-1 ring-primary/30" : ""
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium capitalize">{stepName.replace(/_/g, " ")}</p>
+                    <div className="flex items-center gap-1.5">
+                      {isExecuting ? <Loader2 className="size-3.5 animate-spin text-primary" /> : null}
+                      <p className="text-sm font-medium capitalize">{stepName.replace(/_/g, " ")}</p>
+                    </div>
                     <StatusBadge value={step.status} />
                   </div>
-                  {rationale ? (
-                    <p className="mt-1 text-xs text-muted-foreground">{rationale}</p>
-                  ) : null}
+                  {rationale ? <p className="mt-1 text-xs text-muted-foreground">{rationale}</p> : null}
                   {risk ? (
-                    <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-                      risk: {risk}
-                    </p>
+                    <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">risk: {risk}</p>
                   ) : null}
                 </li>
               );

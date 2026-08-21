@@ -4,10 +4,30 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-export function LoadingBlock({ label = "Loading" }: { label?: string }) {
+export function LoadingBlock({
+  label = "Loading",
+  subLabel,
+  progress,
+}: {
+  label?: string;
+  subLabel?: string;
+  progress?: number;
+}) {
   return (
-    <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-      <Loader2 className="size-4 animate-spin" /> {label}…
+    <div className="flex flex-col gap-2 p-6 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2.5">
+        <Loader2 className="size-4 animate-spin text-primary" />
+        <span className="font-medium text-foreground">{label}…</span>
+      </div>
+      {subLabel ? <p className="text-xs text-muted-foreground pl-6.5">{subLabel}</p> : null}
+      {progress !== undefined ? (
+        <div className="mt-1 ml-6.5 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full bg-primary transition-all duration-300"
+            style={{ width: `${Math.min(100, Math.max(5, progress))}%` }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

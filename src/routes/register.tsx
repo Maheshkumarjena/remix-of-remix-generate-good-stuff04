@@ -16,6 +16,8 @@ import {
 import { useAuth } from "@/lib/auth";
 import type { Role } from "@/lib/types";
 
+import { CAMPUS_DEPARTMENTS } from "@/lib/departments";
+
 export const Route = createFileRoute("/register")({
   head: () => ({
     meta: [
@@ -46,7 +48,7 @@ function RegisterPage() {
     email: "",
     password: "",
     role: "student" as Role,
-    department_id: "",
+    department_id: "aaaaaaaa-aaaa-4aaa-8aaa-111111111111",
     preferred_language: "en",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -141,13 +143,22 @@ function RegisterPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="department">Department</Label>
-          <Input
-            id="department"
+          <Label>Department / Branch</Label>
+          <Select
             value={form.department_id}
-            onChange={(e) => setForm({ ...form, department_id: e.target.value })}
-            placeholder="Computer Science"
-          />
+            onValueChange={(v) => setForm({ ...form, department_id: v })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select department" />
+            </SelectTrigger>
+            <SelectContent>
+              {CAMPUS_DEPARTMENTS.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name} ({d.code})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {error ? (

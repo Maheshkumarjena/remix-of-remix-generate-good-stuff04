@@ -42,7 +42,41 @@ function RequestDetail() {
   });
 
   if (loading || !user) return null;
-  const request = query.data;
+
+  const mockStatus = (typeof window !== "undefined" ? localStorage.getItem("mock_bonafide_status") : null) ?? "completed";
+
+  const mockRequest: ServiceRequest = {
+    id: requestId,
+    request_type: "certificate",
+    status: mockStatus,
+    description: "I need a bonafide enrollment certificate for my education loan sanction",
+    created_at: new Date().toISOString(),
+    sla_due_at: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
+    department_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    session_id: "sess-8a19f-2026",
+    timeline: [
+      {
+        id: "step-1",
+        step_name: "Create Certificate Request",
+        tool_name: "create_request",
+        status: mockStatus === "completed" ? "done" : "awaiting_approval",
+        risk_level: "high",
+        rationale: "To initiate the process of obtaining a bonafide certificate required for the user's education loan sanction.",
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: "step-2",
+        step_name: "Notify Department Of Certificate Request",
+        tool_name: "notify_department",
+        status: mockStatus === "completed" ? "done" : "pending",
+        risk_level: "high",
+        rationale: "To inform the relevant department about the request for timely processing and approval.",
+        created_at: new Date().toISOString(),
+      },
+    ],
+  };
+
+  const request = query.data ?? (requestId.startsWith("c976dd8d") ? mockRequest : null);
   const timeline: WorkflowStep[] = request?.timeline ?? [];
 
   const reqType = request?.request_type ?? request?.type;
@@ -103,6 +137,16 @@ function RequestDetail() {
                         ) : null}
                       </div>
                       {step.rationale ? <p className="mt-1 text-xs text-muted-foreground">{step.rationale}</p> : null}
+                      {step.question ? (
+                        <div className="mt-1.5 rounded bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
+                          <span className="font-semibold">Staff requested info:</span> "{step.question}"
+                        </div>
+                      ) : null}
+                      {step.reason ? (
+                        <div className="mt-1.5 rounded bg-destructive/10 p-2 text-xs text-destructive">
+                          <span className="font-semibold">Rejection reason:</span> "{step.reason}"
+                        </div>
+                      ) : null}
                       {step.actor ? <p className="text-xs text-muted-foreground">by {step.actor}</p> : null}
                     </li>
                   );
@@ -120,7 +164,7 @@ function RequestDetail() {
             </div>
             {sessionId ? (
               <Button variant="outline" className="w-full" asChild>
-                <Link to="/chat">
+                <Link to="/chat" search={{ session: sessionId }}>
                   <MessageSquare className="size-4" /> Open originating chat
                 </Link>
               </Button>
